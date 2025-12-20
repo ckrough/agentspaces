@@ -231,7 +231,7 @@ def worktree_list(cwd: Path | None = None) -> list[WorktreeInfo]:
                 worktrees.append(
                     WorktreeInfo(
                         path=Path(current["worktree"]),
-                        branch=current.get("branch", "").replace("refs/heads/", ""),
+                        branch=current.get("branch", "").removeprefix("refs/heads/"),
                         commit=current.get("HEAD", ""),
                         is_bare=current.get("bare") == "bare",
                     )
@@ -253,7 +253,7 @@ def worktree_list(cwd: Path | None = None) -> list[WorktreeInfo]:
         worktrees.append(
             WorktreeInfo(
                 path=Path(current["worktree"]),
-                branch=current.get("branch", "").replace("refs/heads/", ""),
+                branch=current.get("branch", "").removeprefix("refs/heads/"),
                 commit=current.get("HEAD", ""),
                 is_bare=current.get("bare") == "bare",
             )

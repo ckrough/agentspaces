@@ -97,3 +97,34 @@ uv run mypy src/                       # Type check
 - `ruff` for linting/formatting
 - `mypy --strict` for type checking
 - 80% test coverage target
+
+## Enhancement Backlog
+
+Future improvements from code reviews (Increment 2):
+
+### Python Best Practices
+- Use `@dataclass(frozen=True)` for immutable DTOs (`EnvironmentInfo`, `WorktreeCreateResult`, `WorkspaceInfo`)
+- Add `@functools.cache` to `is_uv_available()` for performance
+- Add `__all__` declarations to define public API in modules
+- Use pattern matching for version parsing in `_get_venv_python_version()`
+- Consider using walrus operator for cleaner code patterns
+
+### CLI Enhancements
+- Add `--verbose` and `--quiet` global flags to `app.py`
+- Add examples to help text using `\b` blocks in docstrings
+- Add "Next steps:" section to create command output
+- Add sorting/filtering options to `list` command (`--sort`, `--all`)
+- Add "Did you mean?" suggestions for workspace not found errors
+- Consider top-level command aliases (`as create`, `as ls`)
+- Document shell completion installation
+
+### Environment Management
+- Add `deps_synced` field to `EnvironmentInfo` to track sync success
+- Add venv verification after creation (check Python executable exists)
+- Make uv timeout configurable via environment variable
+- Add public `get_workspace_path()` method to service (avoid `_resolver` access)
+
+### Testing
+- Add error path tests for `setup_environment` when uv unavailable
+- Add tests for failed dependency sync scenarios
+- Add tests for malformed `.python-version` files

@@ -42,6 +42,7 @@ def print_workspace_created(
     base_branch: str,
     *,
     python_version: str | None = None,
+    has_venv: bool = False,
 ) -> None:
     """Print workspace creation summary."""
     lines = [
@@ -49,7 +50,11 @@ def print_workspace_created(
         f"[bold]Location:[/bold] {path}",
         f"[bold]Branch:[/bold]   {name} (from {base_branch})",
     ]
-    if python_version:
+
+    if has_venv:
+        version_str = python_version or "default"
+        lines.append(f"[bold]Python:[/bold]   {version_str} (.venv created)")
+    elif python_version:
         lines.append(f"[bold]Python:[/bold]   {python_version}")
 
     panel = Panel(

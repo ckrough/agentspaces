@@ -10,6 +10,7 @@ import typer
 from agentspaces.cli.formatters import (
     print_error,
     print_info,
+    print_warning,
     print_workspace_created,
     print_workspace_removed,
     print_workspace_table,
@@ -42,16 +43,25 @@ def create(
     ] = None,
     python_version: Annotated[
         str | None,
-        typer.Option("--python-version", help="Python version for venv (e.g., 3.12)"),
+        typer.Option("--python", help="Python version for venv (e.g., 3.12)"),
     ] = None,
+    no_venv: Annotated[
+        bool,
+        typer.Option("--no-venv", help="Skip virtual environment creation"),
+    ] = False,
 ) -> None:
     """Create a new isolated workspace from a branch.
 
     Creates a git worktree with a unique name (e.g., eager-turing) and
-    optionally sets up a Python virtual environment.
+    sets up a Python virtual environment using uv.
     """
     try:
-        workspace = _service.create(base_branch=branch, purpose=purpose)
+        workspace = _service.create(
+            base_branch=branch,
+            purpose=purpose,
+            python_version=python_version,
+            setup_venv=not no_venv,
+        )
     except WorkspaceError as e:
         print_error(str(e))
         raise typer.Exit(1) from e
@@ -59,13 +69,12 @@ def create(
     if purpose:
         print_info(f"Purpose: {purpose}")
 
-    # TODO: Set up Python venv if detected/requested (Increment 2)
-
     print_workspace_created(
         name=workspace.name,
         path=str(workspace.path),
         base_branch=workspace.base_branch,
-        python_version=python_version,
+        python_version=workspace.python_version,
+        has_venv=workspace.has_venv,
     )
 
     # Print hint about changing to the workspace
@@ -110,10 +119,15 @@ def remove(
         bool,
         typer.Option("--force", "-f", help="Force removal even if workspace is dirty"),
     ] = False,
+    yes: Annotated[
+        bool,
+        typer.Option("--yes", "-y", help="Skip confirmation prompt"),
+    ] = False,
 ) -> None:
     """Remove a workspace and its branch.
 
     This removes the git worktree and deletes the associated branch.
+    WARNING: This cannot be undone!
     """
     # Check we're not removing the current worktree
     try:
@@ -127,6 +141,14 @@ def remove(
             raise typer.Exit(1)
     except (OSError, WorkspaceError):
         pass  # If we can't resolve paths, continue anyway
+
+    # Confirm removal unless --yes is provided
+    if not yes:
+        print_warning(f"About to remove workspace '{name}' and its branch.")
+        confirm = typer.confirm("Are you sure you want to continue?", default=False)
+        if not confirm:
+            print_info("Cancelled")
+            raise typer.Exit(0)
 
     try:
         _service.remove(name, force=force)

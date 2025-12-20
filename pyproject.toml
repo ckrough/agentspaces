@@ -102,7 +102,13 @@ addopts = "-v --tb=short"
 [tool.coverage.run]
 source = ["src"]
 branch = true
-omit = ["*/tests/*", "*/__pycache__/*"]
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/main.py",                    # CLI entry point
+    "*/cli/*",                      # CLI layer (integration tested)
+    "*/infrastructure/logging.py",  # Logging config
+]
 
 [tool.coverage.report]
 fail_under = 80

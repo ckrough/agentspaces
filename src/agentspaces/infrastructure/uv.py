@@ -269,7 +269,9 @@ def detect_python_version(project_path: Path) -> str | None:
                     return parsed_version
         except (OSError, UnicodeDecodeError, KeyError, tomllib.TOMLDecodeError) as e:
             # If we can't parse, just return None
-            logger.debug("pyproject_parse_failed", path=str(pyproject_path), error=str(e))
+            logger.debug(
+                "pyproject_parse_failed", path=str(pyproject_path), error=str(e)
+            )
 
     return None
 

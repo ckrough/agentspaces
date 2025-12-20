@@ -70,9 +70,7 @@ class TestWorkspaceError:
 class TestWorkspaceServiceCreate:
     """Tests for WorkspaceService.create method."""
 
-    def test_create_workspace_success(
-        self, git_repo: Path, temp_dir: Path
-    ) -> None:
+    def test_create_workspace_success(self, git_repo: Path, temp_dir: Path) -> None:
         """Should create a workspace."""
         resolver = PathResolver(base=temp_dir / ".agentspaces")
         service = WorkspaceService(resolver=resolver)
@@ -90,9 +88,7 @@ class TestWorkspaceServiceCreate:
         assert result.project == "test-repo"
         assert result.has_venv is False
 
-    def test_create_workspace_with_venv(
-        self, git_repo: Path, temp_dir: Path
-    ) -> None:
+    def test_create_workspace_with_venv(self, git_repo: Path, temp_dir: Path) -> None:
         """Should create a workspace with venv."""
         resolver = PathResolver(base=temp_dir / ".agentspaces")
         service = WorkspaceService(resolver=resolver)
@@ -170,9 +166,7 @@ class TestWorkspaceServiceList:
 class TestWorkspaceServiceRemove:
     """Tests for WorkspaceService.remove method."""
 
-    def test_remove_workspace_success(
-        self, git_repo: Path, temp_dir: Path
-    ) -> None:
+    def test_remove_workspace_success(self, git_repo: Path, temp_dir: Path) -> None:
         """Should remove an existing workspace."""
         resolver = PathResolver(base=temp_dir / ".agentspaces")
         service = WorkspaceService(resolver=resolver)
@@ -190,9 +184,7 @@ class TestWorkspaceServiceRemove:
 
         assert not created.path.exists()
 
-    def test_remove_workspace_not_found(
-        self, git_repo: Path, temp_dir: Path
-    ) -> None:
+    def test_remove_workspace_not_found(self, git_repo: Path, temp_dir: Path) -> None:
         """Should raise WorkspaceNotFoundError for non-existent workspace."""
         resolver = PathResolver(base=temp_dir / ".agentspaces")
         service = WorkspaceService(resolver=resolver)
@@ -204,9 +196,7 @@ class TestWorkspaceServiceRemove:
 class TestWorkspaceServiceGetProjectName:
     """Tests for WorkspaceService.get_project_name method."""
 
-    def test_get_project_name_success(
-        self, git_repo: Path, temp_dir: Path
-    ) -> None:
+    def test_get_project_name_success(self, git_repo: Path, temp_dir: Path) -> None:
         """Should return the project name."""
         resolver = PathResolver(base=temp_dir / ".agentspaces")
         service = WorkspaceService(resolver=resolver)

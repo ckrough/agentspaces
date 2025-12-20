@@ -29,9 +29,7 @@ class TestWorktreeCreateResult:
 class TestCreateWorktree:
     """Tests for create_worktree function."""
 
-    def test_create_worktree_success(
-        self, git_repo: Path, temp_dir: Path
-    ) -> None:
+    def test_create_worktree_success(self, git_repo: Path, temp_dir: Path) -> None:
         """Should create a worktree with generated name."""
         resolver = PathResolver(base=temp_dir / ".agentspaces")
 
@@ -76,9 +74,7 @@ class TestCreateWorktree:
 class TestRemoveWorktree:
     """Tests for remove_worktree function."""
 
-    def test_remove_worktree_success(
-        self, git_repo: Path, temp_dir: Path
-    ) -> None:
+    def test_remove_worktree_success(self, git_repo: Path, temp_dir: Path) -> None:
         """Should remove an existing worktree."""
         resolver = PathResolver(base=temp_dir / ".agentspaces")
 
@@ -101,9 +97,7 @@ class TestRemoveWorktree:
 
         assert not result.path.exists()
 
-    def test_remove_worktree_not_found(
-        self, git_repo: Path, temp_dir: Path
-    ) -> None:
+    def test_remove_worktree_not_found(self, git_repo: Path, temp_dir: Path) -> None:
         """Should raise FileNotFoundError for non-existent worktree."""
         import pytest
 
@@ -128,9 +122,7 @@ class TestListWorktrees:
         assert len(result) == 1
         assert result[0].is_main is True
 
-    def test_list_worktrees_with_worktree(
-        self, git_repo: Path, temp_dir: Path
-    ) -> None:
+    def test_list_worktrees_with_worktree(self, git_repo: Path, temp_dir: Path) -> None:
         """Should return all worktrees including created ones."""
         resolver = PathResolver(base=temp_dir / ".agentspaces")
 
@@ -160,9 +152,7 @@ class TestGetRepoInfo:
         assert repo_root.resolve() == git_repo.resolve()
         assert project == "test-repo"
 
-    def test_get_repo_info_from_worktree(
-        self, git_repo: Path, temp_dir: Path
-    ) -> None:
+    def test_get_repo_info_from_worktree(self, git_repo: Path, temp_dir: Path) -> None:
         """Should return main repo info when in a worktree."""
         resolver = PathResolver(base=temp_dir / ".agentspaces")
 

@@ -20,6 +20,23 @@ class TestGitError:
         assert error.stderr == "error message"
 
 
+class TestGitTimeoutError:
+    """Tests for GitTimeoutError exception."""
+
+    def test_timeout_error_attributes(self) -> None:
+        """GitTimeoutError should store timeout value."""
+        error = git.GitTimeoutError("Command timed out", timeout=30.0)
+        assert str(error) == "Command timed out"
+        assert error.timeout == 30.0
+        assert error.returncode == -1
+        assert "30" in error.stderr
+
+    def test_timeout_error_is_git_error(self) -> None:
+        """GitTimeoutError should be a subclass of GitError."""
+        error = git.GitTimeoutError("Command timed out", timeout=30.0)
+        assert isinstance(error, git.GitError)
+
+
 class TestGetRepoRoot:
     """Tests for get_repo_root function."""
 

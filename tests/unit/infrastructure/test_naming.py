@@ -47,6 +47,7 @@ class TestGenerateName:
 
     def test_raises_after_max_attempts(self) -> None:
         """Should raise RuntimeError if can't find unique name."""
+
         # Always return True (name exists)
         def always_exists(_name: str) -> bool:
             return True

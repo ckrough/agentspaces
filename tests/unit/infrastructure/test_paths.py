@@ -6,7 +6,87 @@ from pathlib import Path
 
 import pytest
 
-from agentspaces.infrastructure.paths import PathResolver
+from agentspaces.infrastructure.paths import (
+    InvalidNameError,
+    PathResolver,
+    _validate_name,
+)
+
+
+class TestValidateName:
+    """Tests for name validation security."""
+
+    def test_valid_simple_name(self) -> None:
+        """Simple alphanumeric names should be valid."""
+        _validate_name("myproject", "project")  # Should not raise
+
+    def test_valid_name_with_hyphens(self) -> None:
+        """Names with hyphens should be valid."""
+        _validate_name("my-project", "project")  # Should not raise
+
+    def test_valid_name_with_underscores(self) -> None:
+        """Names with underscores should be valid."""
+        _validate_name("my_project", "project")  # Should not raise
+
+    def test_valid_name_with_numbers(self) -> None:
+        """Names with numbers should be valid."""
+        _validate_name("project123", "project")  # Should not raise
+
+    def test_valid_docker_style_name(self) -> None:
+        """Docker-style adjective-noun names should be valid."""
+        _validate_name("eager-turing", "workspace")  # Should not raise
+
+    def test_invalid_empty_name(self) -> None:
+        """Empty names should be rejected."""
+        with pytest.raises(InvalidNameError, match="cannot be empty"):
+            _validate_name("", "project")
+
+    def test_invalid_too_long(self) -> None:
+        """Names over 100 characters should be rejected."""
+        long_name = "a" * 101
+        with pytest.raises(InvalidNameError, match="too long"):
+            _validate_name(long_name, "project")
+
+    def test_invalid_path_traversal(self) -> None:
+        """Path traversal attempts should be rejected."""
+        with pytest.raises(InvalidNameError):
+            _validate_name("../etc", "project")
+
+    def test_invalid_absolute_path(self) -> None:
+        """Absolute paths should be rejected."""
+        with pytest.raises(InvalidNameError):
+            _validate_name("/etc/passwd", "project")
+
+    def test_invalid_path_separator(self) -> None:
+        """Path separators should be rejected."""
+        with pytest.raises(InvalidNameError):
+            _validate_name("foo/bar", "project")
+
+    def test_invalid_starts_with_hyphen(self) -> None:
+        """Names starting with hyphen should be rejected."""
+        with pytest.raises(InvalidNameError):
+            _validate_name("-invalid", "project")
+
+    def test_invalid_starts_with_underscore(self) -> None:
+        """Names starting with underscore should be rejected."""
+        with pytest.raises(InvalidNameError):
+            _validate_name("_invalid", "project")
+
+    def test_invalid_special_characters(self) -> None:
+        """Special characters should be rejected."""
+        for char in [".", " ", "@", "!", "#", "$", "%"]:
+            with pytest.raises(InvalidNameError):
+                _validate_name(f"invalid{char}name", "project")
+
+    def test_invalid_dot_only(self) -> None:
+        """Single dot should be rejected."""
+        with pytest.raises(InvalidNameError):
+            _validate_name(".", "project")
+
+    def test_invalid_double_dot(self) -> None:
+        """Double dot should be rejected."""
+        with pytest.raises(InvalidNameError):
+            _validate_name("..", "project")
 
 
 class TestPathResolver:
@@ -60,14 +140,20 @@ class TestPathResolver:
         """workspace_json should return workspace.json path."""
         path = resolver.workspace_json("my-project", "eager-turing")
         expected = (
-            resolver.base / "my-project" / "eager-turing" / ".agentspace" / "workspace.json"
+            resolver.base
+            / "my-project"
+            / "eager-turing"
+            / ".agentspace"
+            / "workspace.json"
         )
         assert path == expected
 
     def test_skills_dir(self, resolver: PathResolver) -> None:
         """skills_dir should return skills directory path."""
         path = resolver.skills_dir("my-project", "eager-turing")
-        expected = resolver.base / "my-project" / "eager-turing" / ".agentspace" / "skills"
+        expected = (
+            resolver.base / "my-project" / "eager-turing" / ".agentspace" / "skills"
+        )
         assert path == expected
 
     def test_workspace_context_skill(self, resolver: PathResolver) -> None:
@@ -155,3 +241,25 @@ class TestPathResolver:
 
         projects = resolver.list_projects()
         assert set(projects) == {"project-a", "project-b"}
+
+    def test_project_dir_validates_name(self, resolver: PathResolver) -> None:
+        """project_dir should reject invalid names."""
+        with pytest.raises(InvalidNameError):
+            resolver.project_dir("../escape")
+
+    def test_workspace_dir_validates_project_name(self, resolver: PathResolver) -> None:
+        """workspace_dir should reject invalid project names."""
+        with pytest.raises(InvalidNameError):
+            resolver.workspace_dir("../escape", "valid-name")
+
+    def test_workspace_dir_validates_workspace_name(
+        self, resolver: PathResolver
+    ) -> None:
+        """workspace_dir should reject invalid workspace names."""
+        with pytest.raises(InvalidNameError):
+            resolver.workspace_dir("valid-project", "../escape")
+
+    def test_session_dir_validates_session_id(self, resolver: PathResolver) -> None:
+        """session_dir should reject invalid session IDs."""
+        with pytest.raises(InvalidNameError):
+            resolver.session_dir("valid-project", "valid-workspace", "../escape")

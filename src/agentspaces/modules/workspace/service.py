@@ -8,7 +8,7 @@ from pathlib import Path  # noqa: TC003 - used at runtime in dataclass
 import structlog
 
 from agentspaces.infrastructure import git
-from agentspaces.infrastructure.paths import PathResolver
+from agentspaces.infrastructure.paths import InvalidNameError, PathResolver
 from agentspaces.modules.workspace import worktree
 
 logger = structlog.get_logger()
@@ -176,6 +176,8 @@ class WorkspaceService:
                 force=force,
                 resolver=self._resolver,
             )
+        except InvalidNameError as e:
+            raise WorkspaceError(str(e)) from e
         except FileNotFoundError as e:
             raise WorkspaceNotFoundError(str(e)) from e
         except git.GitError as e:

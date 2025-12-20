@@ -15,6 +15,10 @@ if TYPE_CHECKING:
 logger = structlog.get_logger()
 
 
+# Default timeout for git operations (30 seconds)
+DEFAULT_TIMEOUT = 30
+
+
 class GitError(Exception):
     """Raised when a git operation fails."""
 
@@ -22,6 +26,16 @@ class GitError(Exception):
         super().__init__(message)
         self.returncode = returncode
         self.stderr = stderr
+
+
+class GitTimeoutError(GitError):
+    """Raised when a git operation times out."""
+
+    def __init__(self, message: str, timeout: float) -> None:
+        super().__init__(
+            message, returncode=-1, stderr=f"Operation timed out after {timeout}s"
+        )
+        self.timeout = timeout
 
 
 @dataclass(frozen=True)
@@ -40,6 +54,7 @@ def _run_git(
     *,
     cwd: Path | None = None,
     check: bool = True,
+    timeout: float = DEFAULT_TIMEOUT,
 ) -> subprocess.CompletedProcess[str]:
     """Run a git command and return the result.
 
@@ -47,22 +62,31 @@ def _run_git(
         args: Git command arguments (without 'git' prefix).
         cwd: Working directory for the command.
         check: Whether to raise GitError on non-zero exit.
+        timeout: Maximum time in seconds to wait for the command.
 
     Returns:
         CompletedProcess with stdout/stderr.
 
     Raises:
         GitError: If check=True and command fails.
+        GitTimeoutError: If the command times out.
     """
     cmd = ["git", *args]
     logger.debug("git_command", cmd=cmd, cwd=str(cwd) if cwd else None)
 
-    result = subprocess.run(
-        cmd,
-        cwd=cwd,
-        capture_output=True,
-        text=True,
-    )
+    try:
+        result = subprocess.run(
+            cmd,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as e:
+        raise GitTimeoutError(
+            f"Git command timed out: {' '.join(cmd)}",
+            timeout=timeout,
+        ) from e
 
     if check and result.returncode != 0:
         raise GitError(
@@ -168,7 +192,9 @@ def worktree_add(
     _run_git(["worktree", "add", "-b", branch, str(path), base], cwd=cwd)
 
 
-def worktree_remove(path: Path, *, force: bool = False, cwd: Path | None = None) -> None:
+def worktree_remove(
+    path: Path, *, force: bool = False, cwd: Path | None = None
+) -> None:
     """Remove a git worktree.
 
     Args:

@@ -2,7 +2,41 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
+
+
+class InvalidNameError(ValueError):
+    """Raised when a project or workspace name is invalid."""
+
+    pass
+
+
+# Valid name pattern: alphanumeric, hyphens, underscores (no path separators, no ..)
+_VALID_NAME_PATTERN = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_-]*$")
+
+
+def _validate_name(name: str, kind: str) -> None:
+    """Validate a project or workspace name for path safety.
+
+    Args:
+        name: The name to validate.
+        kind: Either "project" or "workspace" for error messages.
+
+    Raises:
+        InvalidNameError: If the name is invalid or could cause path traversal.
+    """
+    if not name:
+        raise InvalidNameError(f"{kind.title()} name cannot be empty")
+
+    if len(name) > 100:
+        raise InvalidNameError(f"{kind.title()} name too long (max 100 characters)")
+
+    if not _VALID_NAME_PATTERN.match(name):
+        raise InvalidNameError(
+            f"Invalid {kind} name '{name}'. Names must start with alphanumeric "
+            "and contain only letters, numbers, hyphens, and underscores."
+        )
 
 
 class PathResolver:
@@ -45,7 +79,11 @@ class PathResolver:
 
         Args:
             project: Project/repository name.
+
+        Raises:
+            InvalidNameError: If the project name is invalid.
         """
+        _validate_name(project, "project")
         return self.base / project
 
     def workspace_dir(self, project: str, workspace: str) -> Path:
@@ -54,7 +92,11 @@ class PathResolver:
         Args:
             project: Project/repository name.
             workspace: Workspace name.
+
+        Raises:
+            InvalidNameError: If either name is invalid.
         """
+        _validate_name(workspace, "workspace")
         return self.project_dir(project) / workspace
 
     def metadata_dir(self, project: str, workspace: str) -> Path:
@@ -109,7 +151,11 @@ class PathResolver:
             project: Project/repository name.
             workspace: Workspace name.
             session_id: Session identifier.
+
+        Raises:
+            InvalidNameError: If any name is invalid.
         """
+        _validate_name(session_id, "session")
         return self.sessions_dir(project, workspace) / session_id
 
     def venv_dir(self, project: str, workspace: str) -> Path:

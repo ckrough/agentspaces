@@ -22,7 +22,8 @@ src/agentspaces/
 ├── main.py                    # CLI entry point
 ├── cli/                       # Typer commands
 │   ├── app.py                 # Main app
-│   └── workspace.py           # Workspace subcommands
+│   ├── workspace.py           # Workspace subcommands
+│   └── docs.py                # Design template commands
 ├── modules/
 │   └── workspace/             # Workspace management
 │       ├── service.py         # Business logic
@@ -31,7 +32,15 @@ src/agentspaces/
     ├── git.py                 # Git subprocess wrapper
     ├── naming.py              # Name generation
     ├── paths.py               # Path resolution
+    ├── design.py              # Template rendering
+    ├── frontmatter.py         # YAML frontmatter parser
     └── logging.py             # structlog config
+
+templates/skeleton/            # Project skeleton templates
+├── CLAUDE.md                  # Agent constitution template
+├── TODO.md                    # Task list template
+├── .claude/                   # Agent/command templates
+└── docs/                      # ADR and design templates
 ```
 
 ## Architecture
@@ -67,9 +76,15 @@ Uses [agentskills.io](https://agentskills.io) standard:
 ## Commands
 
 ```bash
-as workspace create [branch]   # Create workspace
-as workspace list              # List workspaces
-as workspace remove <name>     # Remove workspace
+# Workspaces
+agentspaces workspace create [branch]   # Create workspace
+agentspaces workspace list              # List workspaces
+agentspaces workspace remove <name>     # Remove workspace
+
+# Design templates
+agentspaces docs list                   # List available templates
+agentspaces docs info <template>        # Show template details
+agentspaces docs create <template>      # Generate from template
 ```
 
 ## Testing
@@ -98,15 +113,8 @@ uv run mypy src/                       # Type check
 - `mypy --strict` for type checking
 - 80% test coverage target
 
-## Enhancement Backlog
+## Documentation
 
-See [TODO.md](TODO.md) for the full development backlog. Key remaining items:
-
-### CLI Enhancements
-- Add `--verbose` and `--quiet` global flags
-- Add examples to help text
-- Add sorting/filtering to `list` command
-
-### Code Quality
-- Use pattern matching for version parsing
-- Consider walrus operator for cleaner patterns
+- [TODO.md](TODO.md) - Active task list
+- [docs/design/architecture.md](docs/design/architecture.md) - System design
+- [docs/adr/](docs/adr/) - Architecture decisions

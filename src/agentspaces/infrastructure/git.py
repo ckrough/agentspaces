@@ -302,3 +302,30 @@ def is_git_repo(path: Path) -> bool:
     """
     result = _run_git(["rev-parse", "--git-dir"], cwd=path, check=False)
     return result.returncode == 0
+
+
+def is_dirty(cwd: Path | None = None) -> bool:
+    """Check if the repository has uncommitted changes.
+
+    This includes:
+    - Staged changes (in index)
+    - Unstaged changes to tracked files
+    - Untracked files are NOT considered dirty
+
+    Args:
+        cwd: Directory to check.
+
+    Returns:
+        True if there are uncommitted changes.
+    """
+    # Check for staged or unstaged changes (excludes untracked files)
+    result = _run_git(["status", "--porcelain"], cwd=cwd, check=False)
+    if result.returncode != 0:
+        return False
+
+    # Each line represents a change; filter to only staged/modified (not untracked '??')
+    for line in result.stdout.splitlines():
+        if line and not line.startswith("??"):
+            return True
+
+    return False

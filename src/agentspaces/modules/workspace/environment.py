@@ -201,3 +201,37 @@ def activation_command(workspace_path: Path) -> str | None:
         return f"source {activate_path}"
 
     return None
+
+
+def sync_dependencies(workspace_path: Path, *, all_extras: bool = True) -> bool:
+    """Sync dependencies for a workspace using uv sync.
+
+    Args:
+        workspace_path: Path to the workspace directory.
+        all_extras: Whether to install all optional dependency groups.
+
+    Returns:
+        True if sync succeeded, False otherwise.
+
+    Raises:
+        EnvironmentError: If uv is not available or no pyproject.toml exists.
+    """
+    if not uv.is_uv_available():
+        raise EnvironmentError(
+            "uv is not installed. Install with: curl -LsSf https://astral.sh/uv/install.sh | sh"
+        )
+
+    if not uv.has_pyproject(workspace_path):
+        raise EnvironmentError(
+            f"No pyproject.toml found in {workspace_path}. Cannot sync dependencies."
+        )
+
+    logger.info("sync_dependencies_start", workspace=str(workspace_path))
+
+    try:
+        uv.sync(workspace_path, all_extras=all_extras)
+        logger.info("sync_dependencies_complete", workspace=str(workspace_path))
+        return True
+    except uv.UvError as e:
+        logger.error("sync_dependencies_failed", error=e.stderr)
+        raise EnvironmentError(f"Failed to sync dependencies: {e.stderr}") from e

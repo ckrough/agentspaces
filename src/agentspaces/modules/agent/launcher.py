@@ -67,7 +67,8 @@ class AgentLauncher:
         """Launch Claude Code in a workspace.
 
         Args:
-            workspace_name: Workspace to launch in. If None, detects from cwd.
+            workspace_name: Workspace to launch in. If None, detects from cwd,
+                then falls back to active workspace.
             cwd: Current working directory (for detection and project context).
             prompt: Optional initial prompt (e.g., workspace purpose).
 
@@ -87,15 +88,40 @@ class AgentLauncher:
 
         # Determine workspace
         if workspace_name is None:
+            # First, try to detect from cwd
             workspace_name = self.detect_workspace(cwd)
+
+            # Fall back to active workspace
+            if workspace_name is None:
+                try:
+                    active = self._workspace_service.get_active(cwd=cwd)
+                    if active is not None:
+                        workspace_name = active.name
+                        logger.debug(
+                            "using_active_workspace",
+                            workspace=workspace_name,
+                        )
+                except (OSError, Exception) as e:
+                    # Not in a git repo or other error - no active workspace available
+                    logger.debug("active_workspace_fallback_failed", error=str(e))
+
             if workspace_name is None:
                 raise AgentError(
-                    "No workspace specified and not in a workspace directory. "
-                    "Use 'as agent launch <workspace-name>' or cd into a workspace."
+                    "No workspace specified, not in a workspace directory, "
+                    "and no active workspace set. "
+                    "Use 'as agent launch <workspace-name>' or "
+                    "'as workspace activate <workspace-name>'."
                 )
 
         # Get workspace info to validate it exists and get path
         workspace = self._workspace_service.get(workspace_name, cwd=cwd)
+
+        # Update activity timestamp before launching
+        try:
+            self._workspace_service.update_activity(workspace_name, cwd=cwd)
+        except Exception as e:
+            # Activity tracking is non-critical - log warning and continue
+            logger.warning("activity_update_failed", error=str(e))
 
         logger.info(
             "agent_launch_start",

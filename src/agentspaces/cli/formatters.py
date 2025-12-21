@@ -26,6 +26,7 @@ __all__ = [
     "print_warning",
     "print_workspace_created",
     "print_workspace_removed",
+    "print_workspace_status",
     "print_workspace_table",
 ]
 
@@ -211,3 +212,62 @@ def print_workspace_table(workspaces: list[WorkspaceInfo], project: str) -> None
 def print_workspace_removed(name: str) -> None:
     """Print workspace removal confirmation."""
     print_success(f"Workspace '{name}' removed")
+
+
+def print_workspace_status(
+    workspace: WorkspaceInfo,
+    *,
+    is_dirty: bool = False,
+    is_active: bool = False,
+) -> None:
+    """Print detailed workspace status panel.
+
+    Args:
+        workspace: Workspace information.
+        is_dirty: Whether the workspace has uncommitted changes.
+        is_active: Whether this is the active workspace.
+    """
+    # Status badge
+    status_parts = []
+    if is_active:
+        status_parts.append("[green]● active[/green]")
+    else:
+        status_parts.append("[dim]○ inactive[/dim]")
+    if is_dirty:
+        status_parts.append("[yellow]● dirty[/yellow]")
+    else:
+        status_parts.append("[green]● clean[/green]")
+
+    status_line = "  ".join(status_parts)
+
+    lines = [
+        f"[bold]Status:[/bold]    {status_line}",
+        f"[bold]Name:[/bold]      {workspace.name}",
+        f"[bold]Path:[/bold]      {workspace.path}",
+        f"[bold]Branch:[/bold]    {workspace.branch}",
+        f"[bold]Base:[/bold]      {workspace.base_branch or '-'}",
+    ]
+
+    if workspace.purpose:
+        lines.append(f"[bold]Purpose:[/bold]   {workspace.purpose}")
+
+    lines.append("")
+    lines.append("[bold]Python Environment[/bold]")
+    if workspace.has_venv:
+        version_str = workspace.python_version or "unknown"
+        lines.append(f"  [green]✓[/green] venv: Python {version_str}")
+    else:
+        lines.append("  [dim]○ no venv[/dim]")
+
+    lines.append("")
+    lines.append("[bold]Timestamps[/bold]")
+    lines.append(f"  Created:  {format_relative_time(workspace.created_at)}")
+    lines.append(f"  Synced:   {format_relative_time(workspace.deps_synced_at)}")
+    lines.append(f"  Activity: {format_relative_time(workspace.last_activity_at)}")
+
+    panel = Panel(
+        "\n".join(lines),
+        title=f"[cyan]{workspace.name}[/cyan]",
+        border_style="cyan",
+    )
+    console.print(panel)

@@ -25,7 +25,9 @@ __all__ = [
 logger = structlog.get_logger()
 
 # Current schema version - increment when making breaking changes
-SCHEMA_VERSION = "1"
+# v1: Initial schema
+# v2: Added deps_synced_at and last_activity_at fields
+SCHEMA_VERSION = "2"
 
 # Maximum metadata file size (1MB - generous for workspace metadata)
 MAX_METADATA_SIZE = 1 * 1024 * 1024
@@ -49,6 +51,8 @@ class WorkspaceMetadata:
         python_version: Python version used for venv.
         has_venv: Whether a virtual environment was created.
         status: Workspace status (active, archived).
+        deps_synced_at: Timestamp when dependencies were last synced.
+        last_activity_at: Timestamp of last agent launch or sync.
     """
 
     name: str
@@ -60,6 +64,8 @@ class WorkspaceMetadata:
     python_version: str | None = None
     has_venv: bool = False
     status: str = "active"
+    deps_synced_at: datetime | None = None
+    last_activity_at: datetime | None = None
 
 
 def save_workspace_metadata(metadata: WorkspaceMetadata, path: Path) -> None:
@@ -164,18 +170,50 @@ def _metadata_to_dict(metadata: WorkspaceMetadata) -> dict[str, Any]:
         metadata: WorkspaceMetadata to convert.
 
     Returns:
-        Dict with version field and ISO 8601 timestamp.
+        Dict with version field and ISO 8601 timestamps.
     """
     data = asdict(metadata)
 
     # Add schema version
     data["version"] = SCHEMA_VERSION
 
-    # Convert datetime to ISO 8601 string
-    if isinstance(data["created_at"], datetime):
-        data["created_at"] = data["created_at"].isoformat()
+    # Convert datetime fields to ISO 8601 strings
+    for field in ("created_at", "deps_synced_at", "last_activity_at"):
+        if isinstance(data.get(field), datetime):
+            data[field] = data[field].isoformat()
 
     return data
+
+
+def _parse_datetime(value: str | datetime | None) -> datetime | None:
+    """Parse a datetime from string or datetime object.
+
+    Args:
+        value: ISO 8601 string, datetime, or None.
+
+    Returns:
+        UTC-aware datetime or None.
+
+    Raises:
+        TypeError: If value has invalid type.
+    """
+    if value is None:
+        return None
+
+    if isinstance(value, str):
+        result = datetime.fromisoformat(value)
+        if result.tzinfo is None:
+            result = result.replace(tzinfo=UTC)
+        return result
+
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            return value.replace(tzinfo=UTC)
+        return value
+
+    raise TypeError(
+        f"Invalid datetime type: {type(value).__name__}. Expected str or datetime."
+    )
 
 
 def _dict_to_metadata(data: dict[str, Any]) -> WorkspaceMetadata:
@@ -190,25 +228,11 @@ def _dict_to_metadata(data: dict[str, Any]) -> WorkspaceMetadata:
     Raises:
         KeyError: If required fields are missing.
         ValueError: If datetime format is invalid.
-        TypeError: If created_at has invalid type.
+        TypeError: If datetime field has invalid type.
     """
-    # Parse datetime from ISO 8601 string
-    created_at = data["created_at"]
-    if isinstance(created_at, str):
-        # Handle both timezone-aware and naive timestamps
-        created_at = datetime.fromisoformat(created_at)
-        # Ensure UTC if no timezone specified
-        if created_at.tzinfo is None:
-            created_at = created_at.replace(tzinfo=UTC)
-    elif isinstance(created_at, datetime):
-        # Already a datetime object
-        if created_at.tzinfo is None:
-            created_at = created_at.replace(tzinfo=UTC)
-    else:
-        raise TypeError(
-            f"Invalid created_at type: {type(created_at).__name__}. "
-            "Expected str or datetime."
-        )
+    created_at = _parse_datetime(data["created_at"])
+    if created_at is None:
+        raise ValueError("created_at is required and cannot be None")
 
     return WorkspaceMetadata(
         name=data["name"],
@@ -220,4 +244,6 @@ def _dict_to_metadata(data: dict[str, Any]) -> WorkspaceMetadata:
         python_version=data.get("python_version"),
         has_venv=data.get("has_venv", False),
         status=data.get("status", "active"),
+        deps_synced_at=_parse_datetime(data.get("deps_synced_at")),
+        last_activity_at=_parse_datetime(data.get("last_activity_at")),
     )

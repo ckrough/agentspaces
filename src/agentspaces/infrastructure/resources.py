@@ -72,9 +72,7 @@ def get_skeleton_templates_dir() -> Path:
     skeleton_dir = templates_dir / "skeleton"
 
     if not skeleton_dir.exists():
-        raise ResourceError(
-            f"Skeleton templates directory not found: {skeleton_dir}"
-        )
+        raise ResourceError(f"Skeleton templates directory not found: {skeleton_dir}")
 
     return skeleton_dir
 
@@ -92,8 +90,6 @@ def get_skills_templates_dir() -> Path:
     skills_dir = templates_dir / "skills"
 
     if not skills_dir.exists():
-        raise ResourceError(
-            f"Skills templates directory not found: {skills_dir}"
-        )
+        raise ResourceError(f"Skills templates directory not found: {skills_dir}")
 
     return skills_dir

@@ -121,8 +121,8 @@ def print_next_steps(workspace_name: str, workspace_path: str, has_venv: bool) -
         steps.append("source .venv/bin/activate")
     steps.extend(
         [
-            "as agent launch",
-            f"as workspace remove {workspace_name}",
+            "agentspaces agent launch",
+            f"agentspaces workspace remove {workspace_name}",
         ]
     )
 

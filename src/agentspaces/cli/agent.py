@@ -63,10 +63,10 @@ def launch(
 
     \b
     Examples:
-        as agent launch eager-turing       # Launch in specific workspace
-        as agent launch                    # Auto-detect from current directory
-        as agent launch -p "Fix auth bug"  # With initial prompt
-        as agent launch --use-purpose      # Use workspace purpose as prompt
+        agentspaces agent launch eager-turing       # Launch in specific workspace
+        agentspaces agent launch                    # Auto-detect from current directory
+        agentspaces agent launch -p "Fix auth bug"  # With initial prompt
+        agentspaces agent launch --use-purpose      # Use workspace purpose as prompt
     """
     # Validate mutually exclusive flags
     if use_purpose and prompt:
@@ -82,7 +82,7 @@ def launch(
         if not workspace:
             print_error("--use-purpose requires a workspace name")
             print_info(
-                "Specify workspace: as agent launch <workspace-name> --use-purpose"
+                "Specify workspace: agentspaces agent launch <workspace-name> --use-purpose"
             )
             raise typer.Exit(1)
 
@@ -99,7 +99,7 @@ def launch(
         except WorkspaceNotFoundError:
             print_error(f"Workspace not found: {workspace}")
             _suggest_similar_workspaces(workspace)
-            print_info("Use 'as workspace list' to see available workspaces")
+            print_info("Use 'agentspaces workspace list' to see available workspaces")
             raise typer.Exit(1) from None
         except WorkspaceError as e:
             print_error(f"Could not read workspace: {e}")
@@ -131,7 +131,7 @@ def launch(
     except WorkspaceNotFoundError:
         print_error(f"Workspace not found: {workspace}")
         _suggest_similar_workspaces(workspace)
-        print_info("Use 'as workspace list' to see available workspaces")
+        print_info("Use 'agentspaces workspace list' to see available workspaces")
         raise typer.Exit(1) from None
 
     except (AgentError, WorkspaceError) as e:

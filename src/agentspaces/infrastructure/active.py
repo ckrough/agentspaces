@@ -1,7 +1,7 @@
 """Active workspace tracking.
 
 Manages the .active file that stores the currently active workspace
-for a project. This enables the 'as agent launch' command to fall back
+for a project. This enables the 'agentspaces agent launch' command to fall back
 to the active workspace when not inside a workspace directory.
 """
 

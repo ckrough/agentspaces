@@ -28,19 +28,21 @@ src/agentspaces/
 │   └── workspace/             # Workspace management
 │       ├── service.py         # Business logic
 │       └── worktree.py        # Git worktree operations
-└── infrastructure/            # Shared utilities
-    ├── git.py                 # Git subprocess wrapper
-    ├── naming.py              # Name generation
-    ├── paths.py               # Path resolution
-    ├── design.py              # Template rendering
-    ├── frontmatter.py         # YAML frontmatter parser
-    └── logging.py             # structlog config
-
-templates/skeleton/            # Project skeleton templates
-├── CLAUDE.md                  # Agent constitution template
-├── TODO.md                    # Task list template
-├── .claude/                   # Agent/command templates
-└── docs/                      # ADR and design templates
+├── infrastructure/            # Shared utilities
+│   ├── git.py                 # Git subprocess wrapper
+│   ├── naming.py              # Name generation
+│   ├── paths.py               # Path resolution
+│   ├── design.py              # Template rendering
+│   ├── resources.py           # Package resource access
+│   ├── frontmatter.py         # YAML frontmatter parser
+│   └── logging.py             # structlog config
+└── templates/                 # Bundled project templates
+    ├── skeleton/              # Project skeleton templates
+    │   ├── CLAUDE.md          # Agent constitution template
+    │   ├── TODO.md            # Task list template
+    │   ├── .claude/           # Agent/command templates
+    │   └── docs/              # ADR and design templates
+    └── skills/                # Skill templates
 ```
 
 ## Architecture

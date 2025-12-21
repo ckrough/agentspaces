@@ -12,14 +12,20 @@ Each template includes YAML frontmatter with metadata for agent discovery.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import structlog
 import yaml
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound, UndefinedError
 
 from agentspaces.infrastructure.frontmatter import FrontmatterError, parse_frontmatter
+from agentspaces.infrastructure.resources import (
+    ResourceError,
+    get_skeleton_templates_dir,
+)
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 __all__ = [
     "DesignError",
@@ -70,26 +76,10 @@ def _get_design_template_dir() -> Path:
     Raises:
         DesignError: If templates directory not found or invalid.
     """
-    # Start from package root (4 levels up from this file)
-    package_root = Path(__file__).parent.parent.parent.parent
-    templates_dir = package_root / "templates" / "skeleton"
-
-    if not templates_dir.exists():
-        raise DesignError(
-            "Skeleton templates directory not found. "
-            "Expected at: <project>/templates/skeleton/"
-        )
-
-    # Ensure templates_dir is within package root (prevent symlink attacks)
     try:
-        resolved = templates_dir.resolve()
-        package_resolved = package_root.resolve()
-        if not str(resolved).startswith(str(package_resolved)):
-            raise DesignError("Templates directory escapes package root")
-    except OSError as e:
-        raise DesignError(f"Cannot resolve templates directory: {e}") from e
-
-    return templates_dir
+        return get_skeleton_templates_dir()
+    except ResourceError as e:
+        raise DesignError(str(e)) from e
 
 
 def _parse_template_metadata(path: Path) -> DesignTemplate:

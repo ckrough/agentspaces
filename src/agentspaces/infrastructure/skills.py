@@ -6,13 +6,16 @@ Generates skill files (SKILL.md) using Jinja2 templates for agent discovery.
 from __future__ import annotations
 
 import re
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import structlog
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 
+from agentspaces.infrastructure.resources import ResourceError, get_skills_templates_dir
+
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from agentspaces.infrastructure.metadata import WorkspaceMetadata
 
 __all__ = [
@@ -21,9 +24,6 @@ __all__ = [
 ]
 
 logger = structlog.get_logger()
-
-# Expected template file for validation
-_EXPECTED_TEMPLATE = "skills/workspace-context/SKILL.md"
 
 
 class SkillError(Exception):
@@ -51,39 +51,27 @@ def _sanitize_for_markdown(text: str) -> str:
 
 
 def _get_template_dir() -> Path:
-    """Get and validate the templates directory path.
+    """Get and validate the skills templates directory path.
 
     Returns:
-        Path to the validated templates directory.
+        Path to the validated templates/skills directory.
 
     Raises:
         SkillError: If templates directory not found or invalid.
     """
-    # Start from package root (4 levels up from this file)
-    package_root = Path(__file__).parent.parent.parent.parent
-    templates_dir = package_root / "templates"
-
-    if not templates_dir.exists():
-        raise SkillError(
-            "Templates directory not found. "
-            "Expected at: <project>/templates/skills/workspace-context/"
-        )
+    try:
+        skills_dir = get_skills_templates_dir()
+    except ResourceError as e:
+        raise SkillError(str(e)) from e
 
     # Validate expected template structure exists
-    expected_template = templates_dir / _EXPECTED_TEMPLATE
+    expected_template = skills_dir / "workspace-context" / "SKILL.md"
     if not expected_template.exists():
-        raise SkillError(f"Template structure invalid: missing {_EXPECTED_TEMPLATE}")
+        raise SkillError(
+            "Template structure invalid: missing workspace-context/SKILL.md"
+        )
 
-    # Ensure templates_dir is within package root (prevent symlink attacks)
-    try:
-        resolved = templates_dir.resolve()
-        package_resolved = package_root.resolve()
-        if not str(resolved).startswith(str(package_resolved)):
-            raise SkillError("Templates directory escapes package root")
-    except OSError as e:
-        raise SkillError(f"Cannot resolve templates directory: {e}") from e
-
-    return templates_dir
+    return skills_dir
 
 
 def generate_workspace_context_skill(
@@ -106,8 +94,8 @@ def generate_workspace_context_skill(
         SkillError: If generation fails.
     """
     try:
-        template_dir = _get_template_dir()
-        skill_template_dir = template_dir / "skills" / "workspace-context"
+        skills_dir = _get_template_dir()
+        skill_template_dir = skills_dir / "workspace-context"
 
         if not skill_template_dir.exists():
             raise SkillError(

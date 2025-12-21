@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from rich.console import Console
@@ -9,7 +10,20 @@ from rich.panel import Panel
 from rich.table import Table
 
 if TYPE_CHECKING:
-    from agentspaces.infrastructure.git import WorktreeInfo
+    from agentspaces.modules.workspace.service import WorkspaceInfo
+
+__all__ = [
+    "console",
+    "error_console",
+    "format_relative_time",
+    "print_error",
+    "print_info",
+    "print_success",
+    "print_warning",
+    "print_workspace_created",
+    "print_workspace_removed",
+    "print_workspace_table",
+]
 
 # Shared console instance
 console = Console()
@@ -65,11 +79,54 @@ def print_workspace_created(
     console.print(panel)
 
 
-def print_workspace_table(workspaces: list[WorktreeInfo], project: str) -> None:
+def format_relative_time(dt: datetime | None) -> str:
+    """Format datetime as relative time string.
+
+    Args:
+        dt: Datetime to format.
+
+    Returns:
+        Human-readable relative time (e.g., "2 hours ago").
+    """
+    if dt is None:
+        return "-"
+
+    # Ensure both datetimes are timezone-aware
+    now = datetime.now(UTC)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=UTC)
+
+    diff = now - dt
+    seconds = int(diff.total_seconds())
+
+    if seconds < 60:
+        return "just now"
+    if seconds < 3600:
+        minutes = seconds // 60
+        return f"{minutes}m ago"
+    if seconds < 86400:
+        hours = seconds // 3600
+        return f"{hours}h ago"
+    if seconds < 604800:
+        days = seconds // 86400
+        return f"{days}d ago"
+
+    # For older dates, show the date
+    return dt.strftime("%Y-%m-%d")
+
+
+def _truncate(text: str, max_length: int) -> str:
+    """Truncate text with ellipsis if too long."""
+    if len(text) <= max_length:
+        return text
+    return text[: max_length - 1] + "…"
+
+
+def print_workspace_table(workspaces: list[WorkspaceInfo], project: str) -> None:
     """Print a table of workspaces.
 
     Args:
-        workspaces: List of worktree info objects.
+        workspaces: List of workspace info objects.
         project: Project name for the header.
     """
     if not workspaces:
@@ -79,16 +136,18 @@ def print_workspace_table(workspaces: list[WorktreeInfo], project: str) -> None:
     table = Table(title=f"Workspaces for {project}")
     table.add_column("Name", style="cyan")
     table.add_column("Branch", style="green")
+    table.add_column("Purpose", style="dim", max_width=40)
+    table.add_column("Created", style="dim")
     table.add_column("Path")
-    table.add_column("Type", style="dim")
 
-    for wt in workspaces:
-        wt_type = "main" if wt.is_main else "worktree"
+    for ws in workspaces:
+        purpose = _truncate(ws.purpose, 40) if ws.purpose else "-"
         table.add_row(
-            wt.path.name,
-            wt.branch or "(detached)",
-            str(wt.path),
-            wt_type,
+            ws.name,
+            ws.branch or "(detached)",
+            purpose,
+            format_relative_time(ws.created_at),
+            str(ws.path),
         )
 
     console.print(table)

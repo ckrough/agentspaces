@@ -140,7 +140,8 @@ class TestWorkspaceServiceList:
         result = service.list(cwd=git_repo)
 
         assert len(result) == 1
-        assert result[0].is_main is True
+        # Main repo workspace has the repo directory name
+        assert result[0].name == git_repo.name
 
     def test_list_workspaces_with_workspace(
         self, git_repo: Path, temp_dir: Path
@@ -179,8 +180,8 @@ class TestWorkspaceServiceRemove:
         )
         assert created.path.exists()
 
-        # Remove it
-        service.remove(created.name, cwd=git_repo)
+        # Remove it (force=True needed because metadata files are untracked)
+        service.remove(created.name, force=True, cwd=git_repo)
 
         assert not created.path.exists()
 

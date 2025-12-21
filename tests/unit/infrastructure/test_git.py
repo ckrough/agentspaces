@@ -231,7 +231,9 @@ class TestBranchExists:
 class TestWorktreeAddExisting:
     """Tests for worktree_add_existing function."""
 
-    def test_worktree_add_existing_success(self, git_repo: Path, temp_dir: Path) -> None:
+    def test_worktree_add_existing_success(
+        self, git_repo: Path, temp_dir: Path
+    ) -> None:
         """Should create worktree for existing branch."""
         import subprocess
 

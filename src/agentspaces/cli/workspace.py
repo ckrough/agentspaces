@@ -47,7 +47,9 @@ def create(
     ] = "HEAD",
     attach: Annotated[
         bool,
-        typer.Option("--attach", "-a", help="Attach to existing branch instead of creating new"),
+        typer.Option(
+            "--attach", "-a", help="Attach to existing branch instead of creating new"
+        ),
     ] = False,
     purpose: Annotated[
         str | None,

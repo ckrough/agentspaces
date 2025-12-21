@@ -58,7 +58,9 @@ class TestSanitizeBranchName:
 
     def test_multiple_slashes(self) -> None:
         """Multiple slashes should all be replaced."""
-        assert worktree.sanitize_branch_name("feature/auth/login") == "feature-auth-login"
+        assert (
+            worktree.sanitize_branch_name("feature/auth/login") == "feature-auth-login"
+        )
         assert worktree.sanitize_branch_name("a/b/c/d") == "a-b-c-d"
 
 

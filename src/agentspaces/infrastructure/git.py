@@ -349,6 +349,13 @@ def branch_delete(branch: str, *, force: bool = False, cwd: Path | None = None) 
     logger.info("branch_delete", branch=branch, force=force)
     flag = "-D" if force else "-d"
     result = _run_git(["branch", flag, branch], cwd=cwd, check=False)
+    if result.returncode != 0:
+        logger.warning(
+            "branch_delete_failed",
+            branch=branch,
+            returncode=result.returncode,
+            stderr=result.stderr.strip(),
+        )
     return result.returncode == 0
 
 

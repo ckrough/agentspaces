@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path  # noqa: TC003 - used at runtime in dataclass
@@ -204,13 +203,20 @@ class WorkspaceService:
         except Exception as e:
             # Metadata save is critical - attempt cleanup and fail
             logger.error("metadata_save_failed", error=str(e))
-            with contextlib.suppress(Exception):
+            try:
                 worktree.remove_worktree(
                     project=project,
                     name=result.name,
                     repo_root=repo_root,
                     force=True,
                     resolver=self._resolver,
+                )
+            except Exception as cleanup_error:
+                logger.warning(
+                    "workspace_cleanup_failed",
+                    workspace=result.name,
+                    error=str(cleanup_error),
+                    original_error=str(e),
                 )
             raise WorkspaceError(f"Failed to save workspace metadata: {e}") from e
 

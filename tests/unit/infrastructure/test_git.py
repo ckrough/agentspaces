@@ -272,6 +272,25 @@ class TestWorktreeAddExisting:
                 cwd=git_repo,
             )
 
+    def test_worktree_add_existing_branch_already_checked_out(
+        self, git_repo: Path, temp_dir: Path
+    ) -> None:
+        """Should raise GitError when branch is already checked out."""
+        # The main branch is already checked out in git_repo
+        current_branch = git.get_current_branch(cwd=git_repo)
+        worktree_path = temp_dir / "duplicate-worktree"
+
+        with pytest.raises(git.GitError) as excinfo:
+            git.worktree_add_existing(
+                path=worktree_path,
+                branch=current_branch,
+                cwd=git_repo,
+            )
+
+        # Git message varies by version: "already checked out" or "already used by worktree"
+        stderr = excinfo.value.stderr.lower()
+        assert "already" in stderr and ("checked out" in stderr or "worktree" in stderr)
+
 
 class TestIsDirty:
     """Tests for is_dirty function."""

@@ -3,7 +3,7 @@ name: architecture
 description: Read when understanding workspaces, agents, or infrastructure. Layered architecture reference.
 ---
 
-# AgentSpaces Architecture
+# agentspaces Architecture
 
 Workspace orchestration tool for AI coding agents, enabling parallel feature development through isolated git worktrees with tracked context.
 
@@ -41,7 +41,7 @@ Single CLI application with clear layer boundaries. Dependencies flow downward o
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     AgentSpaces CLI                             │
+│                     agentspaces CLI                             │
 │  ┌────────────────────────────────────────────────────────────┐ │
 │  │                    CLI Layer (Typer)                       │ │
 │  │         Commands, formatting, user interaction             │ │

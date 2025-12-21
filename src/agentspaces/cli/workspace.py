@@ -112,7 +112,7 @@ def list_workspaces(
 ) -> None:
     """List all workspaces.
 
-    Shows all git worktrees managed by AgentSpaces.
+    Shows all git worktrees managed by agentspaces.
 
     \b
     Examples:

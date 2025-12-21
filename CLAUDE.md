@@ -1,4 +1,4 @@
-# AgentSpaces
+# agentspaces
 
 Workspace orchestration tool for AI coding agents.
 

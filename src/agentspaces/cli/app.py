@@ -5,7 +5,7 @@ from __future__ import annotations
 import typer
 
 from agentspaces import __version__
-from agentspaces.cli import workspace
+from agentspaces.cli import agent, workspace
 
 # Main application
 app = typer.Typer(
@@ -16,6 +16,7 @@ app = typer.Typer(
 )
 
 # Register subcommand groups
+app.add_typer(agent.app, name="agent")
 app.add_typer(workspace.app, name="workspace")
 
 

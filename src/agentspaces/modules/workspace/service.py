@@ -101,6 +101,7 @@ class WorkspaceService:
         self,
         *,
         base_branch: str = "HEAD",
+        attach_branch: str | None = None,
         purpose: str | None = None,
         python_version: str | None = None,
         setup_venv: bool = True,
@@ -112,7 +113,9 @@ class WorkspaceService:
         persists workspace metadata, and generates a workspace-context skill.
 
         Args:
-            base_branch: Branch to create workspace from.
+            base_branch: Branch to create workspace from (ignored if attach_branch set).
+            attach_branch: Existing branch to attach to. When set, no new branch is
+                created and the workspace name matches the branch name.
             purpose: Description of workspace purpose.
             python_version: Python version for venv (auto-detected if not specified).
             setup_venv: Whether to create a virtual environment.
@@ -122,7 +125,7 @@ class WorkspaceService:
             WorkspaceInfo with details.
 
         Raises:
-            WorkspaceError: If creation fails.
+            WorkspaceError: If creation fails or attach_branch doesn't exist.
         """
         try:
             repo_root, project = worktree.get_repo_info(cwd)
@@ -133,17 +136,29 @@ class WorkspaceService:
             "workspace_create_start",
             project=project,
             base_branch=base_branch,
+            attach_branch=attach_branch,
             purpose=purpose,
             python_version=python_version,
         )
 
         try:
-            result = worktree.create_worktree(
-                project=project,
-                base_branch=base_branch,
-                repo_root=repo_root,
-                resolver=self._resolver,
-            )
+            if attach_branch is not None:
+                result = worktree.attach_worktree(
+                    project=project,
+                    branch=attach_branch,
+                    repo_root=repo_root,
+                    resolver=self._resolver,
+                )
+            else:
+                result = worktree.create_worktree(
+                    project=project,
+                    base_branch=base_branch,
+                    repo_root=repo_root,
+                    resolver=self._resolver,
+                )
+        except ValueError as e:
+            # attach_worktree raises ValueError for branch/workspace issues
+            raise WorkspaceError(str(e)) from e
         except git.GitError as e:
             logger.error("workspace_create_failed", error=e.stderr)
             raise WorkspaceError(f"Failed to create workspace: {e.stderr}") from e

@@ -6,7 +6,6 @@ Generates skill files (SKILL.md) using Jinja2 templates for agent discovery.
 from __future__ import annotations
 
 import re
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import structlog
@@ -15,6 +14,8 @@ from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 from agentspaces.infrastructure.resources import ResourceError, get_skills_templates_dir
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from agentspaces.infrastructure.metadata import WorkspaceMetadata
 
 __all__ = [

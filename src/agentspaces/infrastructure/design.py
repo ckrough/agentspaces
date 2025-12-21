@@ -12,8 +12,7 @@ Each template includes YAML frontmatter with metadata for agent discovery.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import structlog
 import yaml
@@ -24,6 +23,9 @@ from agentspaces.infrastructure.resources import (
     ResourceError,
     get_skeleton_templates_dir,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 __all__ = [
     "DesignError",

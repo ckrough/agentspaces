@@ -152,6 +152,12 @@ class WorkspaceService:
         metadata_dir = self._resolver.metadata_dir(project, result.name)
         metadata_dir.mkdir(parents=True, exist_ok=True)
 
+        # Add .agentspace/ to the main repo's git exclude file so it doesn't
+        # block worktree removal. We use .git/info/exclude instead of .gitignore
+        # because .gitignore would itself be an untracked file that blocks removal.
+        # Note: Git only reads exclude from the main repo, not from worktree git dirs.
+        self._ensure_git_exclude_entry(repo_root, ".agentspace/")
+
         # Set up Python environment if requested
         env_info = None
         if setup_venv:
@@ -571,3 +577,45 @@ class WorkspaceService:
         )
 
         save_workspace_metadata(updated, metadata_path)
+
+    def _ensure_git_exclude_entry(self, repo_root: Path, entry: str) -> None:
+        """Ensure an entry exists in the repository's git exclude file.
+
+        Uses .git/info/exclude instead of .gitignore because .gitignore would
+        itself be an untracked file that blocks worktree removal. The exclude
+        file lives in the git metadata and has the same effect.
+
+        Args:
+            repo_root: Path to the main repository root (not a worktree).
+            entry: The gitignore pattern to add (e.g., ".agentspace/").
+        """
+        git_dir = repo_root / ".git"
+
+        if not git_dir.exists() or not git_dir.is_dir():
+            logger.warning("git_dir_not_found", path=str(git_dir))
+            return
+
+        # Ensure info directory exists
+        info_dir = git_dir / "info"
+        info_dir.mkdir(parents=True, exist_ok=True)
+
+        exclude_path = info_dir / "exclude"
+
+        # Read existing content if file exists
+        existing_lines: set[str] = set()
+        if exclude_path.exists():
+            content = exclude_path.read_text()
+            existing_lines = {line.strip() for line in content.splitlines()}
+
+        # Check if entry already exists (strip to handle trailing whitespace)
+        if entry.strip() in existing_lines:
+            return
+
+        # Append entry to exclude file
+        with exclude_path.open("a") as f:
+            # Add newline before if file exists and doesn't end with newline
+            if exclude_path.exists():
+                content = exclude_path.read_text()
+                if content and not content.endswith("\n"):
+                    f.write("\n")
+            f.write(f"{entry}\n")

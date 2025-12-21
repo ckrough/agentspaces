@@ -120,6 +120,56 @@ class TestWorkspaceServiceCreate:
         metadata_dir = resolver.metadata_dir("test-repo", result.name)
         assert metadata_dir.exists()
 
+    def test_create_workspace_adds_agentspace_to_git_exclude(
+        self, git_repo: Path, temp_dir: Path
+    ) -> None:
+        """Should add .agentspace/ to the main repo's git exclude file.
+
+        Uses .git/info/exclude instead of .gitignore so the exclude itself
+        doesn't become an untracked file that blocks worktree removal.
+        Git only reads exclude from the main repo, not from worktree git dirs.
+        """
+        resolver = PathResolver(base=temp_dir / ".agentspaces")
+        service = WorkspaceService(resolver=resolver)
+
+        service.create(
+            base_branch="HEAD",
+            setup_venv=False,
+            cwd=git_repo,
+        )
+
+        # Check the main repo's exclude file (not the worktree's)
+        exclude_path = git_repo / ".git" / "info" / "exclude"
+        assert exclude_path.exists()
+        content = exclude_path.read_text()
+        assert ".agentspace/" in content
+
+    def test_create_workspace_git_exclude_idempotent(
+        self, git_repo: Path, temp_dir: Path
+    ) -> None:
+        """Should not duplicate .agentspace/ entry if already present."""
+        resolver = PathResolver(base=temp_dir / ".agentspaces")
+        service = WorkspaceService(resolver=resolver)
+
+        # Create workspace
+        service.create(
+            base_branch="HEAD",
+            setup_venv=False,
+            cwd=git_repo,
+        )
+
+        # Check the main repo's exclude file
+        exclude_path = git_repo / ".git" / "info" / "exclude"
+        original_content = exclude_path.read_text()
+
+        # Call _ensure_git_exclude_entry again (simulating another create)
+        service._ensure_git_exclude_entry(git_repo, ".agentspace/")
+
+        # Content should be unchanged
+        new_content = exclude_path.read_text()
+        assert new_content == original_content
+        assert new_content.count(".agentspace/") == 1
+
     def test_create_workspace_not_in_repo(self, temp_dir: Path) -> None:
         """Should raise error when not in a git repo."""
         resolver = PathResolver(base=temp_dir / ".agentspaces")
@@ -168,7 +218,11 @@ class TestWorkspaceServiceRemove:
     """Tests for WorkspaceService.remove method."""
 
     def test_remove_workspace_success(self, git_repo: Path, temp_dir: Path) -> None:
-        """Should remove an existing workspace."""
+        """Should remove an existing workspace without force.
+
+        The .agentspace/ directory is added to git's exclude file on creation,
+        so it doesn't block worktree removal.
+        """
         resolver = PathResolver(base=temp_dir / ".agentspaces")
         service = WorkspaceService(resolver=resolver)
 
@@ -180,8 +234,8 @@ class TestWorkspaceServiceRemove:
         )
         assert created.path.exists()
 
-        # Remove it (force=True needed because metadata files are untracked)
-        service.remove(created.name, force=True, cwd=git_repo)
+        # Remove it - no force needed because .agentspace/ is gitignored
+        service.remove(created.name, cwd=git_repo)
 
         assert not created.path.exists()
 
@@ -287,8 +341,8 @@ class TestWorkspaceServiceActiveWorkspace:
         )
         service.set_active(created.name, cwd=git_repo)
 
-        # Delete the workspace
-        service.remove(created.name, force=True, cwd=git_repo)
+        # Delete the workspace (no force needed, .agentspace/ is gitignored)
+        service.remove(created.name, cwd=git_repo)
 
         # Active should return None now
         result = service.get_active(cwd=git_repo)

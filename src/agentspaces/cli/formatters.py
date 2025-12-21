@@ -22,6 +22,7 @@ __all__ = [
     "print_error",
     "print_info",
     "print_next_steps",
+    "print_quick_start",
     "print_success",
     "print_warning",
     "print_workspace_created",
@@ -133,6 +134,34 @@ def print_next_steps(workspace_name: str, workspace_path: str, has_venv: bool) -
         border_style="blue",
     )
     console.print(panel)
+
+    # Print copyable one-liner for quick start
+    print_quick_start(workspace_path, has_venv)
+
+
+def print_quick_start(workspace_path: str, has_venv: bool) -> None:
+    """Print a copyable one-liner command for quick workspace launch.
+
+    Suppressed when --quiet flag is set.
+
+    Args:
+        workspace_path: Path to the workspace directory.
+        has_venv: Whether a virtual environment was created.
+    """
+    if CLIContext.get().quiet:
+        return
+
+    # Build the one-liner command
+    parts = [f"cd {workspace_path}"]
+    if has_venv:
+        parts.append("source .venv/bin/activate")
+    parts.append("agentspaces agent launch")
+
+    one_liner = " && ".join(parts)
+
+    console.print()
+    console.print("[dim]Quick start (copy & paste):[/dim]")
+    console.print(f"  [bold cyan]{one_liner}[/bold cyan]")
 
 
 def format_relative_time(dt: datetime | None) -> str:

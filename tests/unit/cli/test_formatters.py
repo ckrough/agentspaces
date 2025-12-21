@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from unittest.mock import patch
+from typing import Any
+from unittest.mock import MagicMock, patch
+
+from rich.panel import Panel
 
 from agentspaces.cli.context import CLIContext
 from agentspaces.cli.formatters import (
@@ -10,6 +13,31 @@ from agentspaces.cli.formatters import (
     print_info,
     print_next_steps,
 )
+
+
+def _find_next_steps_panel(mock_console: MagicMock) -> Any:
+    """Find the Next Steps panel from console.print calls.
+
+    Args:
+        mock_console: The mocked console object.
+
+    Returns:
+        The Panel object containing "Next Steps".
+
+    Raises:
+        AssertionError: If no Next Steps panel is found.
+    """
+    for call in mock_console.print.call_args_list:
+        if call.args and isinstance(call.args[0], Panel):
+            panel = call.args[0]
+            if (
+                hasattr(panel, "title")
+                and panel.title
+                and "Next Steps" in str(panel.title)
+            ):
+                return panel
+    msg = "Could not find Next Steps panel in console.print calls"
+    raise AssertionError(msg)
 
 
 class TestPrintInfo:
@@ -56,8 +84,8 @@ class TestPrintNextSteps:
         with patch("agentspaces.cli.formatters.console") as mock_console:
             print_next_steps("test-ws", "/path/to/workspace", has_venv=False)
             mock_console.print.assert_called()
-            # Get the Panel object that was passed to print
-            panel = mock_console.print.call_args[0][0]
+            # Get all printed content - find the Panel with "Next Steps"
+            panel = _find_next_steps_panel(mock_console)
             # Panel.renderable contains the content
             assert "/path/to/workspace" in panel.renderable
 
@@ -65,29 +93,41 @@ class TestPrintNextSteps:
         """Should include venv activation when has_venv is True."""
         with patch("agentspaces.cli.formatters.console") as mock_console:
             print_next_steps("test-ws", "/path/to/workspace", has_venv=True)
-            panel = mock_console.print.call_args[0][0]
+            panel = _find_next_steps_panel(mock_console)
             assert "source .venv/bin/activate" in panel.renderable
 
     def test_excludes_venv_activation_when_no_venv(self) -> None:
         """Should not include venv activation when has_venv is False."""
         with patch("agentspaces.cli.formatters.console") as mock_console:
             print_next_steps("test-ws", "/path/to/workspace", has_venv=False)
-            panel = mock_console.print.call_args[0][0]
+            panel = _find_next_steps_panel(mock_console)
             assert "source .venv/bin/activate" not in panel.renderable
 
     def test_includes_agent_launch(self) -> None:
         """Should include agentspaces agent launch step."""
         with patch("agentspaces.cli.formatters.console") as mock_console:
             print_next_steps("test-ws", "/path/to/workspace", has_venv=False)
-            panel = mock_console.print.call_args[0][0]
+            panel = _find_next_steps_panel(mock_console)
             assert "agentspaces agent launch" in panel.renderable
 
     def test_includes_remove_step(self) -> None:
         """Should include workspace remove step with workspace name."""
         with patch("agentspaces.cli.formatters.console") as mock_console:
             print_next_steps("test-ws", "/path/to/workspace", has_venv=False)
-            panel = mock_console.print.call_args[0][0]
+            panel = _find_next_steps_panel(mock_console)
             assert "agentspaces workspace remove test-ws" in panel.renderable
+
+    def test_prints_quick_start_one_liner(self) -> None:
+        """Should print a quick start one-liner after the panel."""
+        with patch("agentspaces.cli.formatters.console") as mock_console:
+            print_next_steps("test-ws", "/path/to/workspace", has_venv=True)
+            # Check all print calls for the one-liner
+            calls = [str(c) for c in mock_console.print.call_args_list]
+            content = " ".join(calls)
+            assert "Quick start" in content
+            assert "/path/to/workspace" in content
+            assert "source .venv/bin/activate" in content
+            assert "agentspaces agent launch" in content
 
     def test_suppressed_in_quiet_mode(self) -> None:
         """Should not print when quiet mode is enabled."""

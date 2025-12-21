@@ -1,4 +1,4 @@
-# AgentSpaces
+# agentspaces
 
 Workspace orchestration for AI coding agents. Manage isolated workspaces for parallel development with git worktrees, tracked context, and agent integration.
 

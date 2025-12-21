@@ -1,4 +1,4 @@
-# Contributing to AgentSpaces
+# Contributing to agentspaces
 
 This guide covers development setup, project architecture, and contribution guidelines.
 

@@ -251,7 +251,7 @@ class WorkspaceService:
         # Convert worktrees to WorkspaceInfo, loading metadata when available
         workspaces: list[WorkspaceInfo] = []
         for wt in worktrees:
-            # Try to load metadata for AgentSpaces-managed workspaces
+            # Try to load metadata for agentspaces-managed workspaces
             metadata = None
             workspace_name = wt.path.name
 

@@ -1,4 +1,4 @@
-"""Path resolution for AgentSpaces storage."""
+"""Path resolution for agentspaces storage."""
 
 from __future__ import annotations
 
@@ -46,7 +46,7 @@ def _validate_name(name: str, kind: str) -> None:
 
 
 class PathResolver:
-    """Resolves paths for AgentSpaces storage.
+    """Resolves paths for agentspaces storage.
 
     Storage layout:
         ~/.agentspaces/

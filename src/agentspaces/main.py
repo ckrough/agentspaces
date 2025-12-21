@@ -1,4 +1,4 @@
-"""Entry point for AgentSpaces CLI."""
+"""Entry point for agentspaces CLI."""
 
 from agentspaces.cli.app import app
 

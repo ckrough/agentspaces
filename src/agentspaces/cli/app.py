@@ -53,7 +53,7 @@ def main(
         help="Suppress info messages.",
     ),
 ) -> None:
-    """AgentSpaces: Workspace orchestration for AI coding agents.
+    """agentspaces: Workspace orchestration for AI coding agents.
 
     Create isolated workspaces, launch agents with context, and orchestrate
     multi-step workflows.

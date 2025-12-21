@@ -10,7 +10,7 @@ import structlog
 
 
 def configure_logging(*, debug: bool = False, json_logs: bool = False) -> None:
-    """Configure structured logging for AgentSpaces.
+    """Configure structured logging for agentspaces.
 
     Args:
         debug: Enable debug level logging.

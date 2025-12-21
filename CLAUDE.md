@@ -67,9 +67,9 @@ Uses [agentskills.io](https://agentskills.io) standard:
 ## Commands
 
 ```bash
-as workspace create [branch]   # Create workspace
-as workspace list              # List workspaces
-as workspace remove <name>     # Remove workspace
+agentspaces workspace create [branch]   # Create workspace
+agentspaces workspace list              # List workspaces
+agentspaces workspace remove <name>     # Remove workspace
 ```
 
 ## Testing

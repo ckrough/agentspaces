@@ -33,7 +33,7 @@ uv sync --all-extras
 uv run agentspaces --version
 ```
 
-The CLI is available as both `agentspaces` and `as` (short alias).
+The CLI is available as `agentspaces`.
 
 ## Quick Start
 
@@ -44,7 +44,7 @@ The CLI is available as both `agentspaces` and `as` (short alias).
 cd ~/projects/my-app
 
 # Create a workspace from the main branch
-as workspace create main --purpose "Add user authentication"
+agentspaces workspace create main --purpose "Add user authentication"
 
 # Output:
 #   Purpose: Add user authentication
@@ -55,14 +55,14 @@ as workspace create main --purpose "Add user authentication"
 #
 #   Next steps:
 #     cd ~/.agentspaces/my-app/eager-turing
-#     as agent launch eager-turing
+#     agentspaces agent launch eager-turing
 ```
 
 ### Working with Workspaces
 
 ```bash
 # List all workspaces for current project
-as workspace list
+agentspaces workspace list
 
 # Output:
 #   Workspaces for my-app
@@ -70,46 +70,46 @@ as workspace list
 #   eager-turing  eager-turing  2 hours ago
 
 # Check detailed status
-as workspace status eager-turing
+agentspaces workspace status eager-turing
 
 # Set as active workspace (used as default for commands)
-as workspace activate eager-turing
+agentspaces workspace activate eager-turing
 ```
 
 ### Launching an AI Agent
 
 ```bash
 # Launch Claude Code in a workspace
-as agent launch eager-turing
+agentspaces agent launch eager-turing
 
 # Or use the workspace purpose as the initial prompt
-as agent launch eager-turing --use-purpose
+agentspaces agent launch eager-turing --use-purpose
 
 # If you've set an active workspace, just:
-as agent launch
+agentspaces agent launch
 ```
 
 ### Syncing Dependencies
 
 ```bash
 # Sync dependencies after pyproject.toml changes
-as workspace sync eager-turing
+agentspaces workspace sync eager-turing
 
 # Or sync the active workspace
-as workspace sync
+agentspaces workspace sync
 ```
 
 ### Removing a Workspace
 
 ```bash
 # Remove workspace when done (prompts for confirmation)
-as workspace remove eager-turing
+agentspaces workspace remove eager-turing
 
 # Skip confirmation
-as workspace remove eager-turing --yes
+agentspaces workspace remove eager-turing --yes
 
 # Force remove even if workspace has uncommitted changes
-as workspace remove eager-turing --force --yes
+agentspaces workspace remove eager-turing --force --yes
 ```
 
 ## Example Workflow: Parallel Feature Development
@@ -121,31 +121,31 @@ This walkthrough demonstrates developing two features simultaneously.
 cd ~/projects/my-app
 
 # Create a workspace for authentication feature
-as workspace create main --purpose "Implement OAuth login"
+agentspaces workspace create main --purpose "Implement OAuth login"
 # Created: eager-turing
 
 # Create another workspace for API refactoring
-as workspace create main --purpose "Refactor REST endpoints"
+agentspaces workspace create main --purpose "Refactor REST endpoints"
 # Created: clever-hopper
 
 # List your workspaces
-as workspace list
+agentspaces workspace list
 # NAME           BRANCH          CREATED
 # clever-hopper  clever-hopper   just now
 # eager-turing   eager-turing    1 minute ago
 
 # Work on authentication in one terminal
 cd ~/.agentspaces/my-app/eager-turing
-as agent launch --use-purpose
+agentspaces agent launch --use-purpose
 # Agent starts with prompt: "Implement OAuth login"
 
 # Work on API in another terminal
 cd ~/.agentspaces/my-app/clever-hopper
-as agent launch --use-purpose
+agentspaces agent launch --use-purpose
 # Agent starts with prompt: "Refactor REST endpoints"
 
 # When done with a feature, clean up
-as workspace remove eager-turing --yes
+agentspaces workspace remove eager-turing --yes
 ```
 
 ## Command Reference
@@ -153,64 +153,64 @@ as workspace remove eager-turing --yes
 ### Global Options
 
 ```bash
-as --version          # Show version
-as --help             # Show help
-as --verbose          # Enable debug output
-as --quiet            # Suppress info messages
+agentspaces --version          # Show version
+agentspaces --help             # Show help
+agentspaces --verbose          # Enable debug output
+agentspaces --quiet            # Suppress info messages
 ```
 
 ### Workspace Commands
 
 | Command | Description |
 |---------|-------------|
-| `as workspace create [branch]` | Create workspace from branch (default: HEAD) |
-| `as workspace list` | List all workspaces for current project |
-| `as workspace status [name]` | Show detailed workspace status |
-| `as workspace activate <name>` | Set workspace as active (default for commands) |
-| `as workspace current` | Show currently active workspace |
-| `as workspace sync [name]` | Sync dependencies with uv |
-| `as workspace remove <name>` | Remove workspace and its branch |
+| `agentspaces workspace create [branch]` | Create workspace from branch (default: HEAD) |
+| `agentspaces workspace list` | List all workspaces for current project |
+| `agentspaces workspace status [name]` | Show detailed workspace status |
+| `agentspaces workspace activate <name>` | Set workspace as active (default for commands) |
+| `agentspaces workspace current` | Show currently active workspace |
+| `agentspaces workspace sync [name]` | Sync dependencies with uv |
+| `agentspaces workspace remove <name>` | Remove workspace and its branch |
 
 ### Create Options
 
 ```bash
-as workspace create main                    # From main branch
-as workspace create                         # From current HEAD
-as workspace create -p "Fix auth bug"       # With purpose description
-as workspace create --python 3.13           # Specify Python version
-as workspace create --no-venv               # Skip venv creation
+agentspaces workspace create main                    # From main branch
+agentspaces workspace create                         # From current HEAD
+agentspaces workspace create -p "Fix auth bug"       # With purpose description
+agentspaces workspace create --python 3.13           # Specify Python version
+agentspaces workspace create --no-venv               # Skip venv creation
 ```
 
 ### List Options
 
 ```bash
-as workspace list                    # List all (sorted by name)
-as workspace list --sort created     # Sort by creation date (newest first)
-as workspace list --sort branch      # Sort by branch name
-as workspace list -p myproject       # Filter by project name
+agentspaces workspace list                    # List all (sorted by name)
+agentspaces workspace list --sort created     # Sort by creation date (newest first)
+agentspaces workspace list --sort branch      # Sort by branch name
+agentspaces workspace list -p myproject       # Filter by project name
 ```
 
 ### Remove Options
 
 ```bash
-as workspace remove <name>           # With confirmation prompt
-as workspace remove <name> --yes     # Skip confirmation
-as workspace remove <name> --force   # Force remove dirty workspace
+agentspaces workspace remove <name>           # With confirmation prompt
+agentspaces workspace remove <name> --yes     # Skip confirmation
+agentspaces workspace remove <name> --force   # Force remove dirty workspace
 ```
 
 ### Agent Commands
 
 | Command | Description |
 |---------|-------------|
-| `as agent launch [workspace]` | Launch Claude Code in workspace |
+| `agentspaces agent launch [workspace]` | Launch Claude Code in workspace |
 
 ### Launch Options
 
 ```bash
-as agent launch                           # Auto-detect from current directory
-as agent launch eager-turing              # Launch in specific workspace
-as agent launch -p "Fix the login bug"    # With initial prompt
-as agent launch --use-purpose             # Use workspace purpose as prompt
+agentspaces agent launch                           # Auto-detect from current directory
+agentspaces agent launch eager-turing              # Launch in specific workspace
+agentspaces agent launch -p "Fix the login bug"    # With initial prompt
+agentspaces agent launch --use-purpose             # Use workspace purpose as prompt
 ```
 
 ## Shell Completion
@@ -219,12 +219,12 @@ AgentSpaces supports shell completion for bash, zsh, fish, and PowerShell.
 
 ```bash
 # Install completion (adds to shell config)
-as --install-completion
+agentspaces --install-completion
 
 # Or show completion script for manual setup
-as --show-completion bash
-as --show-completion zsh
-as --show-completion fish
+agentspaces --show-completion bash
+agentspaces --show-completion zsh
+agentspaces --show-completion fish
 ```
 
 ## How It Works

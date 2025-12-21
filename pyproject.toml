@@ -44,7 +44,6 @@ dev = [
 
 [project.scripts]
 agentspaces = "agentspaces.main:app"
-as = "agentspaces.main:app"
 
 [project.urls]
 Homepage = "https://github.com/ckrough/agentspaces"

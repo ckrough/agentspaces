@@ -199,3 +199,45 @@ class TestWorktreeInfo:
 
         with pytest.raises(FrozenInstanceError):
             info.branch = "other"  # type: ignore[misc]
+
+
+class TestIsDirty:
+    """Tests for is_dirty function."""
+
+    def test_clean_repo_returns_false(self, git_repo: Path) -> None:
+        """Clean repo should return False."""
+        # Initial repo state should be clean
+        assert git.is_dirty(git_repo) is False
+
+    def test_staged_changes_returns_true(self, git_repo: Path) -> None:
+        """Staged changes should make repo dirty."""
+        # Modify a file
+        readme = git_repo / "README.md"
+        readme.write_text("Modified content")
+
+        # Stage the change
+        import subprocess
+
+        subprocess.run(["git", "add", "README.md"], cwd=git_repo, check=True)
+
+        assert git.is_dirty(git_repo) is True
+
+    def test_unstaged_changes_returns_true(self, git_repo: Path) -> None:
+        """Unstaged changes to tracked files should make repo dirty."""
+        # Modify a tracked file without staging
+        readme = git_repo / "README.md"
+        readme.write_text("Modified content")
+
+        assert git.is_dirty(git_repo) is True
+
+    def test_untracked_files_returns_false(self, git_repo: Path) -> None:
+        """Untracked files should NOT make repo dirty."""
+        # Create a new file but don't stage it
+        new_file = git_repo / "untracked.txt"
+        new_file.write_text("Untracked content")
+
+        assert git.is_dirty(git_repo) is False
+
+    def test_not_git_repo_returns_false(self, temp_dir: Path) -> None:
+        """Non-git directory should return False (no error)."""
+        assert git.is_dirty(temp_dir) is False

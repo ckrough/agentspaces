@@ -210,6 +210,17 @@ class PathResolver:
             if d.is_dir() and d.name != "config.json"
         ]
 
+    def active_file(self, project: str) -> Path:
+        """Path to the .active file for a project.
+
+        Args:
+            project: Project/repository name.
+
+        Returns:
+            Path to the .active file.
+        """
+        return self.project_dir(project) / ".active"
+
 
 # Default resolver instance
 default_resolver = PathResolver()

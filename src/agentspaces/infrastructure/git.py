@@ -12,6 +12,24 @@ import structlog
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+__all__ = [
+    "DEFAULT_TIMEOUT",
+    "GitError",
+    "GitTimeoutError",
+    "WorktreeInfo",
+    "branch_delete",
+    "get_current_branch",
+    "get_main_git_dir",
+    "get_repo_name",
+    "get_repo_root",
+    "is_dirty",
+    "is_git_repo",
+    "is_in_worktree",
+    "worktree_add",
+    "worktree_list",
+    "worktree_remove",
+]
+
 logger = structlog.get_logger()
 
 

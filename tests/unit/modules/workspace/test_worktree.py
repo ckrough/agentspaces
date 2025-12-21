@@ -25,6 +25,22 @@ class TestWorktreeCreateResult:
         assert result.branch == "test-workspace"
         assert result.base_branch == "main"
 
+    def test_create_result_is_frozen(self) -> None:
+        """WorktreeCreateResult should be immutable."""
+        from dataclasses import FrozenInstanceError
+
+        import pytest
+
+        result = worktree.WorktreeCreateResult(
+            name="test-workspace",
+            path=Path("/path/to/workspace"),
+            branch="test-workspace",
+            base_branch="main",
+        )
+
+        with pytest.raises(FrozenInstanceError):
+            result.name = "new-name"  # type: ignore[misc]
+
 
 class TestCreateWorktree:
     """Tests for create_worktree function."""

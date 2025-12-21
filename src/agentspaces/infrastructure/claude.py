@@ -93,7 +93,8 @@ def launch(
             raise ValueError(
                 f"Prompt too long: {len(prompt)} chars (max {MAX_PROMPT_LENGTH})"
             )
-        cmd.extend(["--prompt", prompt])
+        # Prompt is a positional argument in Claude Code CLI
+        cmd.append(prompt)
 
     logger.info("claude_launch", cwd=str(cwd), has_prompt=prompt is not None)
 

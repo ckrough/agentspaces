@@ -179,6 +179,100 @@ class TestWorkspaceServiceCreate:
             service.create(cwd=temp_dir)
 
 
+class TestWorkspaceServiceCreateAttach:
+    """Tests for WorkspaceService.create with attach_branch."""
+
+    def test_create_with_attach_branch(self, git_repo: Path, temp_dir: Path) -> None:
+        """Should create workspace attached to existing branch."""
+        import subprocess
+
+        resolver = PathResolver(base=temp_dir / ".agentspaces")
+        service = WorkspaceService(resolver=resolver)
+
+        # Create a branch first
+        subprocess.run(
+            ["git", "branch", "existing-branch"],
+            cwd=git_repo,
+            check=True,
+        )
+
+        result = service.create(
+            attach_branch="existing-branch",
+            setup_venv=False,
+            cwd=git_repo,
+        )
+
+        assert result.name == "existing-branch"
+        assert result.branch == "existing-branch"
+        assert result.path.exists()
+
+    def test_create_attach_branch_with_slash(
+        self, git_repo: Path, temp_dir: Path
+    ) -> None:
+        """Should handle branch names with slashes."""
+        import subprocess
+
+        resolver = PathResolver(base=temp_dir / ".agentspaces")
+        service = WorkspaceService(resolver=resolver)
+
+        # Create a branch with slash
+        subprocess.run(
+            ["git", "branch", "feature/auth"],
+            cwd=git_repo,
+            check=True,
+        )
+
+        result = service.create(
+            attach_branch="feature/auth",
+            setup_venv=False,
+            cwd=git_repo,
+        )
+
+        assert result.name == "feature-auth"  # Sanitized for directory
+        assert result.branch == "feature/auth"  # Original preserved
+        assert result.path.exists()
+
+    def test_create_attach_nonexistent_branch(
+        self, git_repo: Path, temp_dir: Path
+    ) -> None:
+        """Should raise WorkspaceError for non-existent branch."""
+        resolver = PathResolver(base=temp_dir / ".agentspaces")
+        service = WorkspaceService(resolver=resolver)
+
+        with pytest.raises(WorkspaceError, match="Branch does not exist"):
+            service.create(
+                attach_branch="nonexistent-branch",
+                setup_venv=False,
+                cwd=git_repo,
+            )
+
+    def test_create_attach_creates_metadata(
+        self, git_repo: Path, temp_dir: Path
+    ) -> None:
+        """Should create metadata for attached workspace."""
+        import subprocess
+
+        resolver = PathResolver(base=temp_dir / ".agentspaces")
+        service = WorkspaceService(resolver=resolver)
+
+        subprocess.run(
+            ["git", "branch", "attach-test-branch"],
+            cwd=git_repo,
+            check=True,
+        )
+
+        result = service.create(
+            attach_branch="attach-test-branch",
+            purpose="Testing attach",
+            setup_venv=False,
+            cwd=git_repo,
+        )
+
+        metadata_dir = resolver.metadata_dir("test-repo", result.name)
+        assert metadata_dir.exists()
+        assert result.purpose == "Testing attach"
+
+
 class TestWorkspaceServiceList:
     """Tests for WorkspaceService.list method."""
 

@@ -11,10 +11,12 @@ from agentspaces.infrastructure.paths import PathResolver
 
 __all__ = [
     "WorktreeCreateResult",
+    "attach_worktree",
     "create_worktree",
     "get_repo_info",
     "list_worktrees",
     "remove_worktree",
+    "sanitize_branch_name",
 ]
 
 
@@ -26,6 +28,79 @@ class WorktreeCreateResult:
     path: Path
     branch: str
     base_branch: str
+
+
+def sanitize_branch_name(branch: str) -> str:
+    """Convert a branch name to a valid workspace directory name.
+
+    Replaces slashes with hyphens to handle branches like 'feature/auth'.
+
+    Args:
+        branch: Git branch name.
+
+    Returns:
+        Sanitized name suitable for directory naming.
+    """
+    return branch.replace("/", "-")
+
+
+def attach_worktree(
+    project: str,
+    branch: str,
+    *,
+    repo_root: Path,
+    resolver: PathResolver | None = None,
+) -> WorktreeCreateResult:
+    """Attach to an existing git branch as a worktree.
+
+    Unlike create_worktree, this does not create a new branch - it creates
+    a worktree for an existing branch. The workspace name is derived from
+    the branch name.
+
+    Args:
+        project: Project/repository name.
+        branch: Existing branch to attach to.
+        repo_root: Path to the main repository.
+        resolver: Path resolver instance.
+
+    Returns:
+        WorktreeCreateResult with details.
+
+    Raises:
+        git.GitError: If worktree creation fails.
+        ValueError: If branch doesn't exist or workspace already exists.
+    """
+    resolver = resolver or PathResolver()
+    resolver.ensure_base()
+
+    # Verify branch exists
+    if not git.branch_exists(branch, cwd=repo_root):
+        raise ValueError(f"Branch does not exist: {branch}")
+
+    # Sanitize branch name for directory
+    workspace_name = sanitize_branch_name(branch)
+    workspace_path = resolver.workspace_dir(project, workspace_name)
+
+    # Check if workspace already exists
+    if workspace_path.exists():
+        raise ValueError(f"Workspace already exists: {workspace_name}")
+
+    # Create parent directory
+    workspace_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Create the worktree for existing branch (no -b flag)
+    git.worktree_add_existing(
+        path=workspace_path,
+        branch=branch,
+        cwd=repo_root,
+    )
+
+    return WorktreeCreateResult(
+        name=workspace_name,
+        path=workspace_path,
+        branch=branch,
+        base_branch=branch,  # For attach, base_branch equals branch
+    )
 
 
 def create_worktree(

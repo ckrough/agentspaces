@@ -18,6 +18,7 @@ __all__ = [
     "GitTimeoutError",
     "WorktreeInfo",
     "branch_delete",
+    "branch_exists",
     "get_current_branch",
     "get_main_git_dir",
     "get_repo_name",
@@ -26,6 +27,7 @@ __all__ = [
     "is_git_repo",
     "is_in_worktree",
     "worktree_add",
+    "worktree_add_existing",
     "worktree_list",
     "worktree_remove",
 ]
@@ -210,6 +212,47 @@ def worktree_add(
     _run_git(["worktree", "add", "-b", branch, str(path), base], cwd=cwd)
 
 
+def worktree_add_existing(
+    path: Path,
+    branch: str,
+    *,
+    cwd: Path | None = None,
+) -> None:
+    """Create a new git worktree for an existing branch.
+
+    Unlike worktree_add, this does not create a new branch - it checks out
+    an existing branch into a new worktree location.
+
+    Args:
+        path: Path where the worktree will be created.
+        branch: Name of the existing branch to checkout.
+        cwd: Repository directory.
+
+    Raises:
+        GitError: If worktree creation fails or branch doesn't exist.
+    """
+    logger.info("worktree_add_existing", path=str(path), branch=branch)
+    _run_git(["worktree", "add", str(path), branch], cwd=cwd)
+
+
+def branch_exists(branch: str, *, cwd: Path | None = None) -> bool:
+    """Check if a local branch exists in the repository.
+
+    Args:
+        branch: Branch name to check.
+        cwd: Repository directory.
+
+    Returns:
+        True if the branch exists, False otherwise.
+    """
+    result = _run_git(
+        ["rev-parse", "--verify", f"refs/heads/{branch}"],
+        cwd=cwd,
+        check=False,
+    )
+    return result.returncode == 0
+
+
 def worktree_remove(
     path: Path, *, force: bool = False, cwd: Path | None = None
 ) -> None:
@@ -306,6 +349,13 @@ def branch_delete(branch: str, *, force: bool = False, cwd: Path | None = None) 
     logger.info("branch_delete", branch=branch, force=force)
     flag = "-D" if force else "-d"
     result = _run_git(["branch", flag, branch], cwd=cwd, check=False)
+    if result.returncode != 0:
+        logger.warning(
+            "branch_delete_failed",
+            branch=branch,
+            returncode=result.returncode,
+            stderr=result.stderr.strip(),
+        )
     return result.returncode == 0
 
 

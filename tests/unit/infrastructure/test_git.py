@@ -201,6 +201,97 @@ class TestWorktreeInfo:
             info.branch = "other"  # type: ignore[misc]
 
 
+class TestBranchExists:
+    """Tests for branch_exists function."""
+
+    def test_branch_exists_true(self, git_repo: Path) -> None:
+        """Should return True for existing branch."""
+        branch = git.get_current_branch(cwd=git_repo)
+        assert git.branch_exists(branch, cwd=git_repo) is True
+
+    def test_branch_exists_false(self, git_repo: Path) -> None:
+        """Should return False for non-existent branch."""
+        assert git.branch_exists("nonexistent-branch", cwd=git_repo) is False
+
+    def test_branch_exists_after_create(self, git_repo: Path, temp_dir: Path) -> None:
+        """Should return True for branch created via worktree."""
+        worktree_path = temp_dir / "worktree"
+        git.worktree_add(
+            path=worktree_path,
+            branch="new-test-branch",
+            base="HEAD",
+            cwd=git_repo,
+        )
+        assert git.branch_exists("new-test-branch", cwd=git_repo) is True
+
+        # Cleanup
+        git.worktree_remove(worktree_path, cwd=git_repo)
+
+
+class TestWorktreeAddExisting:
+    """Tests for worktree_add_existing function."""
+
+    def test_worktree_add_existing_success(
+        self, git_repo: Path, temp_dir: Path
+    ) -> None:
+        """Should create worktree for existing branch."""
+        import subprocess
+
+        # Create a branch first (without a worktree)
+        subprocess.run(
+            ["git", "branch", "existing-branch"],
+            cwd=git_repo,
+            check=True,
+        )
+
+        worktree_path = temp_dir / "existing-worktree"
+        git.worktree_add_existing(
+            path=worktree_path,
+            branch="existing-branch",
+            cwd=git_repo,
+        )
+
+        assert worktree_path.exists()
+        assert (worktree_path / "README.md").exists()
+
+        # Verify branch is checked out
+        worktrees = git.worktree_list(cwd=git_repo)
+        wt = next(w for w in worktrees if w.path.resolve() == worktree_path.resolve())
+        assert wt.branch == "existing-branch"
+
+    def test_worktree_add_existing_nonexistent_branch(
+        self, git_repo: Path, temp_dir: Path
+    ) -> None:
+        """Should raise GitError for non-existent branch."""
+        worktree_path = temp_dir / "nonexistent-worktree"
+
+        with pytest.raises(git.GitError):
+            git.worktree_add_existing(
+                path=worktree_path,
+                branch="nonexistent-branch",
+                cwd=git_repo,
+            )
+
+    def test_worktree_add_existing_branch_already_checked_out(
+        self, git_repo: Path, temp_dir: Path
+    ) -> None:
+        """Should raise GitError when branch is already checked out."""
+        # The main branch is already checked out in git_repo
+        current_branch = git.get_current_branch(cwd=git_repo)
+        worktree_path = temp_dir / "duplicate-worktree"
+
+        with pytest.raises(git.GitError) as excinfo:
+            git.worktree_add_existing(
+                path=worktree_path,
+                branch=current_branch,
+                cwd=git_repo,
+            )
+
+        # Git message varies by version: "already checked out" or "already used by worktree"
+        stderr = excinfo.value.stderr.lower()
+        assert "already" in stderr and ("checked out" in stderr or "worktree" in stderr)
+
+
 class TestIsDirty:
     """Tests for is_dirty function."""
 

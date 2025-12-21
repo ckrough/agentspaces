@@ -48,8 +48,14 @@ _service = WorkspaceService()
 def create(
     branch: Annotated[
         str,
-        typer.Argument(help="Base branch to create workspace from"),
+        typer.Argument(help="Base branch (or target branch with --attach)"),
     ] = "HEAD",
+    attach: Annotated[
+        bool,
+        typer.Option(
+            "--attach", "-a", help="Attach to existing branch instead of creating new"
+        ),
+    ] = False,
     purpose: Annotated[
         str | None,
         typer.Option("--purpose", "-p", help="Purpose/description for this workspace"),
@@ -74,21 +80,33 @@ def create(
     Creates a git worktree with a unique name (e.g., eager-turing) and
     sets up a Python virtual environment using uv.
 
+    Use --attach to create a workspace for an existing branch without
+    creating a new branch. The workspace name will match the branch name.
+
     \b
     Examples:
         agentspaces workspace create                      # From current HEAD
         agentspaces workspace create main                 # From main branch
         agentspaces workspace create -p "Fix auth bug"   # With purpose
         agentspaces workspace create --no-venv            # Skip venv setup
+        agentspaces workspace create feature/auth --attach  # Attach to existing branch
         agentspaces workspace create --launch             # Create and launch agent
     """
     try:
-        workspace = _service.create(
-            base_branch=branch,
-            purpose=purpose,
-            python_version=python_version,
-            setup_venv=not no_venv,
-        )
+        if attach:
+            workspace = _service.create(
+                attach_branch=branch,
+                purpose=purpose,
+                python_version=python_version,
+                setup_venv=not no_venv,
+            )
+        else:
+            workspace = _service.create(
+                base_branch=branch,
+                purpose=purpose,
+                python_version=python_version,
+                setup_venv=not no_venv,
+            )
     except WorkspaceError as e:
         print_error(str(e))
         raise typer.Exit(1) from e

@@ -42,6 +42,133 @@ class TestWorktreeCreateResult:
             result.name = "new-name"  # type: ignore[misc]
 
 
+class TestSanitizeBranchName:
+    """Tests for sanitize_branch_name function."""
+
+    def test_simple_branch_unchanged(self) -> None:
+        """Simple branch names should remain unchanged."""
+        assert worktree.sanitize_branch_name("main") == "main"
+        assert worktree.sanitize_branch_name("develop") == "develop"
+        assert worktree.sanitize_branch_name("my-branch") == "my-branch"
+
+    def test_branch_with_slash(self) -> None:
+        """Slashes should be replaced with hyphens."""
+        assert worktree.sanitize_branch_name("feature/auth") == "feature-auth"
+        assert worktree.sanitize_branch_name("fix/bug-123") == "fix-bug-123"
+
+    def test_multiple_slashes(self) -> None:
+        """Multiple slashes should all be replaced."""
+        assert (
+            worktree.sanitize_branch_name("feature/auth/login") == "feature-auth-login"
+        )
+        assert worktree.sanitize_branch_name("a/b/c/d") == "a-b-c-d"
+
+
+class TestAttachWorktree:
+    """Tests for attach_worktree function."""
+
+    def test_attach_worktree_success(self, git_repo: Path, temp_dir: Path) -> None:
+        """Should attach to an existing branch."""
+        import subprocess
+
+        resolver = PathResolver(base=temp_dir / ".agentspaces")
+
+        # Create a branch first (without a worktree)
+        subprocess.run(
+            ["git", "branch", "existing-branch"],
+            cwd=git_repo,
+            check=True,
+        )
+
+        result = worktree.attach_worktree(
+            project="test-repo",
+            branch="existing-branch",
+            repo_root=git_repo,
+            resolver=resolver,
+        )
+
+        assert result.name == "existing-branch"
+        assert result.branch == "existing-branch"
+        assert result.base_branch == "existing-branch"
+        assert result.path.exists()
+
+    def test_attach_worktree_with_slash_in_name(
+        self, git_repo: Path, temp_dir: Path
+    ) -> None:
+        """Should handle branch names with slashes."""
+        import subprocess
+
+        resolver = PathResolver(base=temp_dir / ".agentspaces")
+
+        # Create a branch with slash
+        subprocess.run(
+            ["git", "branch", "feature/auth"],
+            cwd=git_repo,
+            check=True,
+        )
+
+        result = worktree.attach_worktree(
+            project="test-repo",
+            branch="feature/auth",
+            repo_root=git_repo,
+            resolver=resolver,
+        )
+
+        assert result.name == "feature-auth"  # Sanitized
+        assert result.branch == "feature/auth"  # Original preserved
+        assert result.path.exists()
+
+    def test_attach_worktree_nonexistent_branch(
+        self, git_repo: Path, temp_dir: Path
+    ) -> None:
+        """Should raise ValueError for non-existent branch."""
+        import pytest
+
+        resolver = PathResolver(base=temp_dir / ".agentspaces")
+
+        with pytest.raises(ValueError, match="Branch does not exist"):
+            worktree.attach_worktree(
+                project="test-repo",
+                branch="nonexistent-branch",
+                repo_root=git_repo,
+                resolver=resolver,
+            )
+
+    def test_attach_worktree_already_exists(
+        self, git_repo: Path, temp_dir: Path
+    ) -> None:
+        """Should raise ValueError if workspace already exists."""
+        import subprocess
+
+        import pytest
+
+        resolver = PathResolver(base=temp_dir / ".agentspaces")
+
+        # Create a branch
+        subprocess.run(
+            ["git", "branch", "test-branch"],
+            cwd=git_repo,
+            check=True,
+        )
+
+        # Attach first time
+        worktree.attach_worktree(
+            project="test-repo",
+            branch="test-branch",
+            repo_root=git_repo,
+            resolver=resolver,
+        )
+
+        # Try to attach again - should fail
+        with pytest.raises(ValueError, match="Workspace already exists"):
+            worktree.attach_worktree(
+                project="test-repo",
+                branch="test-branch",
+                repo_root=git_repo,
+                resolver=resolver,
+            )
+
+
 class TestCreateWorktree:
     """Tests for create_worktree function."""
 

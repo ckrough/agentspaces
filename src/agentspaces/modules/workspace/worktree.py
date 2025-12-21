@@ -9,8 +9,16 @@ from agentspaces.infrastructure import git
 from agentspaces.infrastructure.naming import generate_name
 from agentspaces.infrastructure.paths import PathResolver
 
+__all__ = [
+    "WorktreeCreateResult",
+    "create_worktree",
+    "get_repo_info",
+    "list_worktrees",
+    "remove_worktree",
+]
 
-@dataclass
+
+@dataclass(frozen=True)
 class WorktreeCreateResult:
     """Result of creating a worktree."""
 

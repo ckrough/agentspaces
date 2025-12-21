@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import re
 import subprocess
 from pathlib import Path  # noqa: TC003 - used at runtime for path operations
@@ -11,6 +12,21 @@ import structlog
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+__all__ = [
+    "DEFAULT_TIMEOUT",
+    "UvError",
+    "UvNotFoundError",
+    "UvTimeoutError",
+    "detect_python_version",
+    "get_uv_version",
+    "has_pyproject",
+    "has_venv",
+    "is_uv_available",
+    "pip_install",
+    "sync",
+    "venv_create",
+]
 
 logger = structlog.get_logger()
 
@@ -103,8 +119,11 @@ def _run_uv(
     return result
 
 
+@functools.cache
 def is_uv_available() -> bool:
     """Check if uv is installed and available.
+
+    Result is cached for the lifetime of the process.
 
     Returns:
         True if uv is available.

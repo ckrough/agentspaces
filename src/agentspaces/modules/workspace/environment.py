@@ -9,10 +9,20 @@ import structlog
 
 from agentspaces.infrastructure import uv
 
+__all__ = [
+    "EnvironmentError",
+    "EnvironmentInfo",
+    "activation_command",
+    "get_environment_info",
+    "remove_environment",
+    "setup_environment",
+    "sync_dependencies",
+]
+
 logger = structlog.get_logger()
 
 
-@dataclass
+@dataclass(frozen=True)
 class EnvironmentInfo:
     """Information about a workspace's Python environment."""
 

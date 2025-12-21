@@ -215,3 +215,89 @@ class TestHasPyproject:
     def test_has_pyproject_false(self, temp_dir: Path) -> None:
         """Should return False when pyproject.toml doesn't exist."""
         assert uv.has_pyproject(temp_dir) is False
+
+
+class TestDetectPythonVersionMalformed:
+    """Tests for detect_python_version with malformed .python-version files."""
+
+    def test_empty_python_version_file(self, temp_dir: Path) -> None:
+        """Should return None for empty .python-version file."""
+        (temp_dir / ".python-version").write_text("")
+
+        version = uv.detect_python_version(temp_dir)
+
+        assert version is None
+
+    def test_whitespace_only_python_version_file(self, temp_dir: Path) -> None:
+        """Should return None for whitespace-only .python-version file."""
+        (temp_dir / ".python-version").write_text("   \n\n  ")
+
+        version = uv.detect_python_version(temp_dir)
+
+        # The version is just whitespace, which gets stripped
+        assert version is None or version.strip() == ""
+
+    def test_python_version_file_with_trailing_newline(self, temp_dir: Path) -> None:
+        """Should handle .python-version files with trailing newlines."""
+        # Standard format: version followed by newline
+        (temp_dir / ".python-version").write_text("3.12\n")
+
+        version = uv.detect_python_version(temp_dir)
+
+        assert version == "3.12"
+
+    def test_python_version_file_with_patch_version(self, temp_dir: Path) -> None:
+        """Should handle full patch versions like 3.12.1."""
+        (temp_dir / ".python-version").write_text("3.12.1\n")
+
+        version = uv.detect_python_version(temp_dir)
+
+        assert version == "3.12.1"
+
+    def test_malformed_pyproject_toml(self, temp_dir: Path) -> None:
+        """Should return None for malformed pyproject.toml."""
+        (temp_dir / "pyproject.toml").write_text("this is not valid toml {{{{")
+
+        version = uv.detect_python_version(temp_dir)
+
+        assert version is None
+
+    def test_pyproject_without_requires_python(self, temp_dir: Path) -> None:
+        """Should return None when pyproject.toml lacks requires-python."""
+        (temp_dir / "pyproject.toml").write_text(
+            "[project]\nname = 'test'\nversion = '1.0'\n"
+        )
+
+        version = uv.detect_python_version(temp_dir)
+
+        assert version is None
+
+    def test_pyproject_with_invalid_requires_python(self, temp_dir: Path) -> None:
+        """Should return None for unparseable requires-python."""
+        (temp_dir / "pyproject.toml").write_text(
+            '[project]\nname = "test"\nrequires-python = "python3"\n'
+        )
+
+        version = uv.detect_python_version(temp_dir)
+
+        # "python3" doesn't match the expected pattern
+        assert version is None
+
+
+class TestIsUvAvailableCached:
+    """Tests for is_uv_available caching behavior."""
+
+    def test_is_uv_available_is_cached(self) -> None:
+        """is_uv_available should be cached (returns same result on repeated calls)."""
+        # Call multiple times
+        result1 = uv.is_uv_available()
+        result2 = uv.is_uv_available()
+        result3 = uv.is_uv_available()
+
+        # All should be True (uv is installed in test env)
+        assert result1 is True
+        assert result2 is True
+        assert result3 is True
+
+        # Check the function has cache_info (evidence of @functools.cache)
+        assert hasattr(uv.is_uv_available, "cache_info")

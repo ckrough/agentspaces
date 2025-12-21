@@ -8,6 +8,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+__all__ = [
+    "ADJECTIVES",
+    "NOUNS",
+    "generate_name",
+    "is_valid_name",
+]
+
 # Adjectives inspired by Docker's name generator
 ADJECTIVES: tuple[str, ...] = (
     "admiring",

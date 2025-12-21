@@ -5,6 +5,12 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+__all__ = [
+    "InvalidNameError",
+    "PathResolver",
+    "default_resolver",
+]
+
 
 class InvalidNameError(ValueError):
     """Raised when a project or workspace name is invalid."""

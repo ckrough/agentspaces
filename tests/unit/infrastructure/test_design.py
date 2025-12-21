@@ -120,6 +120,28 @@ class TestRenderDesignTemplate:
         assert "TestApp" in content
         assert "A test application" in content
 
+    def test_preserves_frontmatter_in_output(self, temp_dir: Path) -> None:
+        """Should include YAML frontmatter in rendered output."""
+        output = temp_dir / "architecture.md"
+
+        render_design_template(
+            "architecture",
+            {
+                "project_name": "TestApp",
+                "project_description": "A test application",
+            },
+            output,
+        )
+
+        content = output.read_text()
+        # Frontmatter should be present
+        assert content.startswith("---\n")
+        assert "name: architecture" in content
+        assert "description:" in content
+        assert "category: reference" in content
+        # Variables section should be stripped (template metadata, not doc metadata)
+        assert "variables:" not in content
+
     def test_error_on_missing_required_variable(self, temp_dir: Path) -> None:
         """Should raise DesignError when required variable missing."""
         output = temp_dir / "architecture.md"

@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 import structlog
+import yaml
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound, UndefinedError
 
 from agentspaces.infrastructure.frontmatter import FrontmatterError, parse_frontmatter
@@ -233,7 +234,7 @@ def render_design_template(
         raise DesignError(f"Cannot read template: {e}") from e
 
     try:
-        _frontmatter, body = parse_frontmatter(content)
+        frontmatter, body = parse_frontmatter(content)
     except FrontmatterError as e:
         raise DesignError(f"Invalid template frontmatter: {e}") from e
 
@@ -248,13 +249,37 @@ def render_design_template(
     # Render the body (not the frontmatter)
     try:
         jinja_template = env.from_string(body)
-        rendered = jinja_template.render(**context)
+        rendered_body = jinja_template.render(**context)
     except TemplateNotFound as e:
         raise DesignError(f"Template include not found: {e}") from e
     except UndefinedError as e:
         raise DesignError(f"Undefined variable in template: {e}") from e
     except Exception as e:
         raise DesignError(f"Template rendering failed: {e}") from e
+
+    # Build output frontmatter (keep discovery metadata, strip template metadata)
+    output_frontmatter = {
+        "name": frontmatter.get("name", template_name),
+        "description": frontmatter.get("description", ""),
+    }
+    if "category" in frontmatter:
+        output_frontmatter["category"] = frontmatter["category"]
+    if "when_to_use" in frontmatter:
+        output_frontmatter["when_to_use"] = frontmatter["when_to_use"]
+    if "dependencies" in frontmatter:
+        output_frontmatter["dependencies"] = frontmatter["dependencies"]
+
+    # Format frontmatter as YAML (wide width prevents line wrapping)
+    frontmatter_yaml = yaml.dump(
+        output_frontmatter,
+        default_flow_style=False,
+        allow_unicode=True,
+        sort_keys=False,
+        width=1000,  # Prevent line wrapping for single-line values
+    ).strip()
+
+    # Combine frontmatter and rendered body
+    rendered = f"---\n{frontmatter_yaml}\n---\n{rendered_body}"
 
     # Ensure output directory exists
     try:

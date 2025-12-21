@@ -250,3 +250,100 @@ def create(
         raise typer.Exit(1) from e
 
     console.print(f"[green]✓[/green] Created: {result_path}")
+
+
+# Mapping of template names to their output paths relative to project root
+SCAFFOLD_STRUCTURE: dict[str, str] = {
+    # Root files
+    "readme": "README.md",
+    "claude-md": "CLAUDE.md",
+    "todo-md": "TODO.md",
+    # .claude directory
+    "agents-readme": ".claude/agents/README.md",
+    "commands-readme": ".claude/commands/README.md",
+    # Design docs
+    "architecture": "docs/design/architecture.md",
+    "development-standards": "docs/design/development-standards.md",
+    # Planning/operational
+    "deployment": "docs/planning/deployment.md",
+    # ADR
+    "adr-template": "docs/adr/000-template.md",
+    "adr-example": "docs/adr/001-example.md",
+}
+
+
+@app.command("scaffold")
+def scaffold(
+    target: Annotated[
+        Path,
+        typer.Argument(help="Target directory to scaffold (created if needed)"),
+    ],
+    project_name: Annotated[
+        str,
+        typer.Option("--project-name", "-n", help="Project name"),
+    ],
+    project_description: Annotated[
+        str,
+        typer.Option("--project-description", "-d", help="Project description"),
+    ],
+    force: Annotated[
+        bool,
+        typer.Option("--force", "-f", help="Overwrite existing files"),
+    ] = False,
+) -> None:
+    """Create all documentation templates in a new project directory.
+
+    Scaffolds a complete project documentation structure with all templates
+    pre-populated with your project name and description.
+
+    \b
+    Examples:
+        as docs scaffold ./my-project -n "MyApp" -d "A web application"
+        as docs scaffold /tmp/new-proj -n "CLI Tool" -d "Command-line utility" -f
+    """
+    # Create target directory
+    target = target.resolve()
+    target.mkdir(parents=True, exist_ok=True)
+
+    context: dict[str, Any] = {
+        "project_name": project_name,
+        "project_description": project_description,
+        # Defaults for ADR template
+        "adr_number": "000",
+        "adr_title": "ADR Template",
+    }
+
+    created: list[Path] = []
+    skipped: list[Path] = []
+
+    for template_name, relative_path in SCAFFOLD_STRUCTURE.items():
+        output_path = target / relative_path
+
+        # Check for existing file
+        if output_path.exists() and not force:
+            skipped.append(output_path)
+            continue
+
+        # Create parent directories
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        try:
+            render_design_template(template_name, context, output_path)
+            created.append(output_path)
+        except DesignError as e:
+            error_console.print(f"[red]✗[/red] {template_name}: {e}")
+
+    # Summary
+    console.print()
+    if created:
+        console.print(f"[green]✓[/green] Created {len(created)} files in {target}")
+        for path in created:
+            rel = path.relative_to(target)
+            console.print(f"  [dim]•[/dim] {rel}")
+
+    if skipped:
+        console.print(f"\n[yellow]![/yellow] Skipped {len(skipped)} existing files")
+        for path in skipped:
+            rel = path.relative_to(target)
+            console.print(f"  [dim]•[/dim] {rel}")
+        console.print("[dim]Use --force to overwrite[/dim]")

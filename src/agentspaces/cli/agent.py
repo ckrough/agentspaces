@@ -8,11 +8,13 @@ from typing import Annotated
 import typer
 
 from agentspaces.cli.formatters import (
+    print_did_you_mean,
     print_error,
     print_info,
     print_success,
     print_warning,
 )
+from agentspaces.infrastructure.similarity import find_similar_names
 from agentspaces.modules.agent.launcher import (
     AgentError,
     AgentLauncher,
@@ -96,6 +98,7 @@ def launch(
                 raise typer.Exit(1)
         except WorkspaceNotFoundError:
             print_error(f"Workspace not found: {workspace}")
+            _suggest_similar_workspaces(workspace)
             print_info("Use 'as workspace list' to see available workspaces")
             raise typer.Exit(1) from None
         except WorkspaceError as e:
@@ -127,9 +130,28 @@ def launch(
 
     except WorkspaceNotFoundError:
         print_error(f"Workspace not found: {workspace}")
+        _suggest_similar_workspaces(workspace)
         print_info("Use 'as workspace list' to see available workspaces")
         raise typer.Exit(1) from None
 
     except (AgentError, WorkspaceError) as e:
         print_error(str(e))
         raise typer.Exit(1) from e
+
+
+def _suggest_similar_workspaces(workspace_name: str | None) -> None:
+    """Try to suggest similar workspace names.
+
+    Args:
+        workspace_name: The workspace name that was not found.
+    """
+    if not workspace_name:
+        return
+
+    try:
+        service = WorkspaceService()
+        workspaces = service.list()
+        suggestions = find_similar_names(workspace_name, [ws.name for ws in workspaces])
+        print_did_you_mean(suggestions)
+    except WorkspaceError:
+        pass  # Don't fail on suggestion lookup

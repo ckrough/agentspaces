@@ -9,13 +9,16 @@ from typing import Annotated
 import typer
 
 from agentspaces.cli.formatters import (
+    print_did_you_mean,
     print_error,
     print_info,
+    print_next_steps,
     print_warning,
     print_workspace_created,
     print_workspace_removed,
     print_workspace_table,
 )
+from agentspaces.infrastructure.similarity import find_similar_names
 from agentspaces.modules.workspace.service import (
     WorkspaceError,
     WorkspaceNotFoundError,
@@ -85,8 +88,11 @@ def create(
         has_venv=workspace.has_venv,
     )
 
-    # Print hint about changing to the workspace
-    print_info(f"cd {workspace.path}")
+    print_next_steps(
+        workspace_name=workspace.name,
+        workspace_path=str(workspace.path),
+        has_venv=workspace.has_venv,
+    )
 
 
 @app.command("list")
@@ -166,7 +172,7 @@ def remove(
     # Check we're not removing the current worktree
     try:
         project = _service.get_project_name()
-        workspace_path = _service._resolver.workspace_dir(project, name)
+        workspace_path = _service.get_workspace_path(project, name)
         current_path = Path.cwd().resolve()
         if current_path == workspace_path.resolve() or str(current_path).startswith(
             str(workspace_path.resolve())
@@ -188,6 +194,13 @@ def remove(
         _service.remove(name, force=force)
     except WorkspaceNotFoundError:
         print_error(f"Workspace not found: {name}")
+        # Try to suggest similar workspace names
+        try:
+            workspaces = _service.list()
+            suggestions = find_similar_names(name, [ws.name for ws in workspaces])
+            print_did_you_mean(suggestions)
+        except WorkspaceError:
+            pass  # Don't fail on suggestion lookup
         print_info("Use 'as workspace list' to see available workspaces")
         raise typer.Exit(1) from None
     except WorkspaceError as e:

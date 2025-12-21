@@ -78,6 +78,18 @@ class WorkspaceService:
         """
         self._resolver = resolver or PathResolver()
 
+    def get_workspace_path(self, project: str, workspace: str) -> Path:
+        """Get the path to a workspace directory.
+
+        Args:
+            project: Project name.
+            workspace: Workspace name.
+
+        Returns:
+            Path to the workspace directory.
+        """
+        return self._resolver.workspace_dir(project, workspace)
+
     def create(
         self,
         *,

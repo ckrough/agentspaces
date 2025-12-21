@@ -78,14 +78,14 @@ class TestLaunch:
             assert call_args == ["claude"]
 
     def test_launch_with_prompt(self, tmp_path: Path) -> None:
-        """Should include prompt in command when provided."""
+        """Should include prompt as positional argument when provided."""
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
 
             launch(tmp_path, prompt="Fix the bug")
 
             call_args = mock_run.call_args[0][0]
-            assert call_args == ["claude", "--prompt", "Fix the bug"]
+            assert call_args == ["claude", "Fix the bug"]
 
     def test_launch_returns_exit_code(self, tmp_path: Path) -> None:
         """Should return the process exit code."""
@@ -139,7 +139,7 @@ class TestLaunch:
 
             assert result == 0
             call_args = mock_run.call_args[0][0]
-            assert call_args == ["claude", "--prompt", max_prompt]
+            assert call_args == ["claude", max_prompt]
 
 
 class TestExceptions:

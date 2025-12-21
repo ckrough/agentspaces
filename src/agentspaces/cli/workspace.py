@@ -23,6 +23,11 @@ from agentspaces.cli.formatters import (
 )
 from agentspaces.infrastructure import git
 from agentspaces.infrastructure.similarity import find_similar_names
+from agentspaces.modules.agent.launcher import (
+    AgentError,
+    AgentLauncher,
+    AgentNotFoundError,
+)
 from agentspaces.modules.workspace.service import (
     WorkspaceError,
     WorkspaceNotFoundError,
@@ -63,6 +68,12 @@ def create(
         bool,
         typer.Option("--no-venv", help="Skip virtual environment creation"),
     ] = False,
+    launch: Annotated[
+        bool,
+        typer.Option(
+            "--launch", "-l", help="Launch Claude Code in workspace after creation"
+        ),
+    ] = False,
 ) -> None:
     """Create a new isolated workspace from a branch.
 
@@ -79,6 +90,7 @@ def create(
         agentspaces workspace create -p "Fix auth bug"   # With purpose
         agentspaces workspace create --no-venv            # Skip venv setup
         agentspaces workspace create feature/auth --attach  # Attach to existing branch
+        agentspaces workspace create --launch             # Create and launch agent
     """
     try:
         if attach:
@@ -110,11 +122,49 @@ def create(
         has_venv=workspace.has_venv,
     )
 
-    print_next_steps(
-        workspace_name=workspace.name,
-        workspace_path=str(workspace.path),
-        has_venv=workspace.has_venv,
-    )
+    # If --launch flag is set, launch agent; otherwise show next steps
+    if launch:
+        _launch_agent_in_workspace(workspace.name, workspace.path, purpose)
+    else:
+        print_next_steps(
+            workspace_name=workspace.name,
+            workspace_path=str(workspace.path),
+            has_venv=workspace.has_venv,
+        )
+
+
+def _launch_agent_in_workspace(
+    workspace_name: str, workspace_path: Path, purpose: str | None
+) -> None:
+    """Launch Claude Code agent in a newly created workspace.
+
+    Args:
+        workspace_name: Name of the workspace.
+        workspace_path: Path to the workspace directory.
+        purpose: Optional workspace purpose to use as prompt.
+    """
+    print_info(f"Launching Claude Code in '{workspace_name}'...")
+
+    launcher = AgentLauncher()
+    try:
+        result = launcher.launch_claude(
+            workspace_name,
+            cwd=workspace_path,
+            prompt=purpose,
+        )
+
+        if result.exit_code == 0:
+            print_success(f"Claude Code session ended in '{workspace_name}'")
+        else:
+            print_warning(f"Claude Code exited with code {result.exit_code}")
+
+    except AgentNotFoundError as e:
+        print_error(str(e))
+        print_info("Visit https://claude.ai/download to install Claude Code")
+        raise typer.Exit(1) from e
+    except AgentError as e:
+        print_error(str(e))
+        raise typer.Exit(1) from e
 
 
 @app.command("list")

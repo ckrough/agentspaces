@@ -33,7 +33,7 @@ Always use `uv run` to execute commands:
 
 ```bash
 uv run agentspaces --help
-uv run as workspace list
+uv run agentspaces workspace list
 ```
 
 ## Project Structure
@@ -75,7 +75,7 @@ src/agentspaces/
 ### Data Flow Example
 
 ```
-User runs: as workspace create main
+User runs: agentspaces workspace create main
 
 1. cli/workspace.py: create() command handler
 2. modules/workspace/service.py: WorkspaceService.create()
@@ -268,8 +268,8 @@ def new_command(
 
     \b
     Examples:
-        as workspace new-command foo
-        as workspace new-command bar --option
+        agentspaces workspace new-command foo
+        agentspaces workspace new-command bar --option
     """
     try:
         result = _service.new_operation(arg)
@@ -329,7 +329,7 @@ def info(
 
     \b
     Examples:
-        as workspace info eager-turing
+        agentspaces workspace info eager-turing
     """
     try:
         metadata = _service.get_info(name)

@@ -76,18 +76,18 @@ class TestPrintNextSteps:
             assert "source .venv/bin/activate" not in panel.renderable
 
     def test_includes_agent_launch(self) -> None:
-        """Should include as agent launch step."""
+        """Should include agentspaces agent launch step."""
         with patch("agentspaces.cli.formatters.console") as mock_console:
             print_next_steps("test-ws", "/path/to/workspace", has_venv=False)
             panel = mock_console.print.call_args[0][0]
-            assert "as agent launch" in panel.renderable
+            assert "agentspaces agent launch" in panel.renderable
 
     def test_includes_remove_step(self) -> None:
         """Should include workspace remove step with workspace name."""
         with patch("agentspaces.cli.formatters.console") as mock_console:
             print_next_steps("test-ws", "/path/to/workspace", has_venv=False)
             panel = mock_console.print.call_args[0][0]
-            assert "as workspace remove test-ws" in panel.renderable
+            assert "agentspaces workspace remove test-ws" in panel.renderable
 
     def test_suppressed_in_quiet_mode(self) -> None:
         """Should not print when quiet mode is enabled."""

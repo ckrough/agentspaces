@@ -65,10 +65,10 @@ def create(
 
     \b
     Examples:
-        as workspace create                      # From current HEAD
-        as workspace create main                 # From main branch
-        as workspace create -p "Fix auth bug"   # With purpose
-        as workspace create --no-venv            # Skip venv setup
+        agentspaces workspace create                      # From current HEAD
+        agentspaces workspace create main                 # From main branch
+        agentspaces workspace create -p "Fix auth bug"   # With purpose
+        agentspaces workspace create --no-venv            # Skip venv setup
     """
     try:
         workspace = _service.create(
@@ -116,10 +116,10 @@ def list_workspaces(
 
     \b
     Examples:
-        as workspace list                    # List workspaces for current repo
-        as workspace list -p myproject       # List workspaces for specific project
-        as workspace list --sort created     # Sort by creation date (newest first)
-        as workspace list -s branch          # Sort by branch name
+        agentspaces workspace list                    # List workspaces for current repo
+        agentspaces workspace list -p myproject       # List workspaces for specific project
+        agentspaces workspace list --sort created     # Sort by creation date (newest first)
+        agentspaces workspace list -s branch          # Sort by branch name
     """
     # If no project specified, try to detect from current directory
     if project is None:
@@ -169,9 +169,9 @@ def remove(
 
     \b
     Examples:
-        as workspace remove eager-turing       # Remove with confirmation
-        as workspace remove eager-turing -y    # Skip confirmation
-        as workspace remove eager-turing -f    # Force remove dirty workspace
+        agentspaces workspace remove eager-turing       # Remove with confirmation
+        agentspaces workspace remove eager-turing -y    # Skip confirmation
+        agentspaces workspace remove eager-turing -f    # Force remove dirty workspace
     """
     # Check we're not removing the current worktree
     try:
@@ -205,7 +205,7 @@ def remove(
             print_did_you_mean(suggestions)
         except WorkspaceError:
             pass  # Don't fail on suggestion lookup
-        print_info("Use 'as workspace list' to see available workspaces")
+        print_info("Use 'agentspaces workspace list' to see available workspaces")
         raise typer.Exit(1) from None
     except WorkspaceError as e:
         print_error(str(e))
@@ -222,7 +222,7 @@ def _suggest_similar_workspaces(name: str) -> None:
         print_did_you_mean(suggestions)
     except WorkspaceError:
         pass  # Don't fail on suggestion lookup
-    print_info("Use 'as workspace list' to see available workspaces")
+    print_info("Use 'agentspaces workspace list' to see available workspaces")
 
 
 @app.command("status")
@@ -239,8 +239,8 @@ def status(
 
     \b
     Examples:
-        as workspace status                    # Status of active workspace
-        as workspace status eager-turing       # Status of specific workspace
+        agentspaces workspace status                    # Status of active workspace
+        agentspaces workspace status eager-turing       # Status of specific workspace
     """
     # Determine which workspace to show
     if name is None:
@@ -248,7 +248,7 @@ def status(
         if active is None:
             print_error("No workspace specified and no active workspace set.")
             print_info(
-                "Use 'as workspace status <name>' or 'as workspace activate <name>'"
+                "Use 'agentspaces workspace status <name>' or 'agentspaces workspace activate <name>'"
             )
             raise typer.Exit(1)
         name = active.name
@@ -289,12 +289,12 @@ def activate(
     """Set a workspace as the active workspace.
 
     The active workspace is used as the default for commands like
-    'as agent launch' when no workspace is specified.
+    'agentspaces agent launch' when no workspace is specified.
 
     \b
     Examples:
-        as workspace activate eager-turing     # Set as active
-        as workspace current                   # Show current active
+        agentspaces workspace activate eager-turing     # Set as active
+        agentspaces workspace current                   # Show current active
     """
     try:
         _service.set_active(name)
@@ -314,12 +314,12 @@ def current() -> None:
     """Show the currently active workspace.
 
     The active workspace is used as the default for commands like
-    'as agent launch' when no workspace is specified.
+    'agentspaces agent launch' when no workspace is specified.
 
     \b
     Examples:
-        as workspace current                   # Show active workspace
-        as workspace activate eager-turing     # Set active workspace
+        agentspaces workspace current                   # Show active workspace
+        agentspaces workspace activate eager-turing     # Set active workspace
     """
     try:
         active = _service.get_active()
@@ -329,7 +329,7 @@ def current() -> None:
 
     if active is None:
         print_info("No active workspace set.")
-        print_info("Use 'as workspace activate <name>' to set one.")
+        print_info("Use 'agentspaces workspace activate <name>' to set one.")
         raise typer.Exit(0)
 
     print_info(f"Active workspace: [cyan]{active.name}[/cyan]")
@@ -350,8 +350,8 @@ def sync(
 
     \b
     Examples:
-        as workspace sync                      # Sync active workspace
-        as workspace sync eager-turing         # Sync specific workspace
+        agentspaces workspace sync                      # Sync active workspace
+        agentspaces workspace sync eager-turing         # Sync specific workspace
     """
     try:
         workspace = _service.sync_deps(name)

@@ -118,8 +118,8 @@ def list_templates(
 
     \b
     Examples:
-        as docs list                    # List all templates
-        as docs list -c planning        # List only planning templates
+        agentspaces docs list                    # List all templates
+        agentspaces docs list -c planning        # List only planning templates
     """
     try:
         templates = list_design_templates()
@@ -163,8 +163,8 @@ def info(
 
     \b
     Examples:
-        as docs info architecture       # Show architecture template details
-        as docs info adr-template       # Show ADR template details
+        agentspaces docs info architecture       # Show architecture template details
+        agentspaces docs info adr-template       # Show ADR template details
     """
     try:
         template = get_design_template(template_name)
@@ -205,9 +205,9 @@ def create(
 
     \b
     Examples:
-        as docs create architecture -n "MyApp" -d "A web app"
-        as docs create adr-template -o docs/decisions/
-        as docs create development-standards --force
+        agentspaces docs create architecture -n "MyApp" -d "A web app"
+        agentspaces docs create adr-template -o docs/decisions/
+        agentspaces docs create development-standards --force
     """
     try:
         template = get_design_template(template_name)
@@ -298,8 +298,8 @@ def scaffold(
 
     \b
     Examples:
-        as docs scaffold ./my-project -n "MyApp" -d "A web application"
-        as docs scaffold /tmp/new-proj -n "CLI Tool" -d "Command-line utility" -f
+        agentspaces docs scaffold ./my-project -n "MyApp" -d "A web application"
+        agentspaces docs scaffold /tmp/new-proj -n "CLI Tool" -d "Command-line utility" -f
     """
     # Create target directory
     target = target.resolve()

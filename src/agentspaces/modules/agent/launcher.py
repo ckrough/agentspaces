@@ -109,8 +109,8 @@ class AgentLauncher:
                 raise AgentError(
                     "No workspace specified, not in a workspace directory, "
                     "and no active workspace set. "
-                    "Use 'as agent launch <workspace-name>' or "
-                    "'as workspace activate <workspace-name>'."
+                    "Use 'agentspaces agent launch <workspace-name>' or "
+                    "'agentspaces workspace activate <workspace-name>'."
                 )
 
         # Get workspace info to validate it exists and get path

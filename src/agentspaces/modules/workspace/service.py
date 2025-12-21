@@ -483,7 +483,7 @@ class WorkspaceService:
             else:
                 raise WorkspaceError(
                     "No workspace specified and no active workspace. "
-                    "Use 'as workspace sync <name>' or 'as workspace activate <name>'."
+                    "Use 'agentspaces workspace sync <name>' or 'agentspaces workspace activate <name>'."
                 )
 
         workspace = self.get(name, cwd=cwd)

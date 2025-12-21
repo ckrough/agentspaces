@@ -9,6 +9,8 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from agentspaces.cli.context import CLIContext
+
 if TYPE_CHECKING:
     from agentspaces.modules.workspace.service import WorkspaceInfo
 
@@ -16,8 +18,10 @@ __all__ = [
     "console",
     "error_console",
     "format_relative_time",
+    "print_did_you_mean",
     "print_error",
     "print_info",
+    "print_next_steps",
     "print_success",
     "print_warning",
     "print_workspace_created",
@@ -46,8 +50,27 @@ def print_warning(message: str) -> None:
 
 
 def print_info(message: str) -> None:
-    """Print an info message."""
-    console.print(f"[blue]i[/blue] {message}")
+    """Print an info message.
+
+    Suppressed when --quiet flag is set.
+    """
+    if not CLIContext.get().quiet:
+        console.print(f"[blue]i[/blue] {message}")
+
+
+def print_did_you_mean(suggestions: list[str]) -> None:
+    """Print 'Did you mean?' suggestions.
+
+    Args:
+        suggestions: List of similar names to suggest.
+    """
+    if not suggestions:
+        return
+
+    console.print()
+    console.print("[dim]Did you mean?[/dim]")
+    for name in suggestions:
+        console.print(f"  [cyan]{name}[/cyan]")
 
 
 def print_workspace_created(
@@ -75,6 +98,38 @@ def print_workspace_created(
         "\n".join(lines),
         title="[green]Workspace Created[/green]",
         border_style="green",
+    )
+    console.print(panel)
+
+
+def print_next_steps(workspace_name: str, workspace_path: str, has_venv: bool) -> None:
+    """Print actionable next steps after workspace creation.
+
+    Suppressed when --quiet flag is set.
+
+    Args:
+        workspace_name: Name of the created workspace.
+        workspace_path: Path to the workspace directory.
+        has_venv: Whether a virtual environment was created.
+    """
+    if CLIContext.get().quiet:
+        return
+
+    steps = [f"cd {workspace_path}"]
+    if has_venv:
+        steps.append("source .venv/bin/activate")
+    steps.extend(
+        [
+            "as agent launch",
+            f"as workspace remove {workspace_name}",
+        ]
+    )
+
+    lines = [f"  {i + 1}. [cyan]{step}[/cyan]" for i, step in enumerate(steps)]
+    panel = Panel(
+        "\n".join(lines),
+        title="[blue]Next Steps[/blue]",
+        border_style="blue",
     )
     console.print(panel)
 

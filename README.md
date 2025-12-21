@@ -44,6 +44,20 @@ as workspace list
 as workspace remove eager-turing
 ```
 
+## Shell Completion
+
+AgentSpaces supports shell completion for bash, zsh, fish, and PowerShell.
+
+```bash
+# Install completion (adds to shell config)
+as --install-completion
+
+# Or show completion script for manual setup
+as --show-completion bash
+as --show-completion zsh
+as --show-completion fish
+```
+
 ## Commands
 
 | Command | Description |

@@ -16,7 +16,8 @@ def configure_logging(*, debug: bool = False, json_logs: bool = False) -> None:
         debug: Enable debug level logging.
         json_logs: Output JSON format (for machine parsing).
     """
-    log_level = logging.DEBUG if debug else logging.INFO
+    # Show debug/info when verbose, otherwise only warnings and above
+    log_level = logging.DEBUG if debug else logging.WARNING
 
     # Configure standard library logging
     logging.basicConfig(

@@ -6,6 +6,8 @@ import typer
 
 from agentspaces import __version__
 from agentspaces.cli import agent, workspace
+from agentspaces.cli.context import CLIContext
+from agentspaces.infrastructure.logging import configure_logging
 
 # Main application
 app = typer.Typer(
@@ -29,7 +31,7 @@ def version_callback(value: bool) -> None:
 
 @app.callback()
 def main(
-    version: bool = typer.Option(
+    version: bool = typer.Option(  # noqa: ARG001 - handled by callback
         None,
         "--version",
         "-V",
@@ -37,10 +39,37 @@ def main(
         is_eager=True,
         help="Show version and exit.",
     ),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose",
+        "-v",
+        help="Show debug output.",
+    ),
+    quiet: bool = typer.Option(
+        False,
+        "--quiet",
+        "-q",
+        help="Suppress info messages.",
+    ),
 ) -> None:
     """AgentSpaces: Workspace orchestration for AI coding agents.
 
     Create isolated workspaces, launch agents with context, and orchestrate
     multi-step workflows.
     """
-    pass  # Callback just handles --version flag
+    # Validate mutually exclusive flags
+    if verbose and quiet:
+        import sys
+
+        from agentspaces.cli.formatters import print_error
+
+        print_error("Cannot use both --verbose and --quiet")
+        sys.exit(1)
+
+    # Set up CLI context for verbosity control
+    ctx = CLIContext.get()
+    ctx.verbose = verbose
+    ctx.quiet = quiet
+
+    # Configure logging (debug only when verbose)
+    configure_logging(debug=verbose)

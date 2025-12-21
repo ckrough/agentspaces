@@ -124,7 +124,7 @@ def create(
 
     # If --launch flag is set, launch agent; otherwise show next steps
     if launch:
-        _launch_agent_in_workspace(workspace.name, workspace.path, purpose)
+        _launch_agent_in_workspace(workspace.name, workspace.path)
     else:
         print_next_steps(
             workspace_name=workspace.name,
@@ -133,15 +133,12 @@ def create(
         )
 
 
-def _launch_agent_in_workspace(
-    workspace_name: str, workspace_path: Path, purpose: str | None
-) -> None:
+def _launch_agent_in_workspace(workspace_name: str, workspace_path: Path) -> None:
     """Launch Claude Code agent in a newly created workspace.
 
     Args:
         workspace_name: Name of the workspace.
         workspace_path: Path to the workspace directory.
-        purpose: Optional workspace purpose to use as prompt.
     """
     print_info(f"Launching Claude Code in '{workspace_name}'...")
 
@@ -150,7 +147,6 @@ def _launch_agent_in_workspace(
         result = launcher.launch_claude(
             workspace_name,
             cwd=workspace_path,
-            prompt=purpose,
         )
 
         if result.exit_code == 0:

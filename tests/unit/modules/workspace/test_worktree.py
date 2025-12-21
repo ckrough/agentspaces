@@ -69,8 +69,6 @@ class TestAttachWorktree:
         """Should attach to an existing branch."""
         import subprocess
 
-        import pytest
-
         resolver = PathResolver(base=temp_dir / ".agentspaces")
 
         # Create a branch first (without a worktree)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 from typing import Annotated
 
@@ -54,6 +55,13 @@ def create(
 
     Creates a git worktree with a unique name (e.g., eager-turing) and
     sets up a Python virtual environment using uv.
+
+    \b
+    Examples:
+        as workspace create                      # From current HEAD
+        as workspace create main                 # From main branch
+        as workspace create -p "Fix auth bug"   # With purpose
+        as workspace create --no-venv            # Skip venv setup
     """
     try:
         workspace = _service.create(
@@ -87,10 +95,21 @@ def list_workspaces(
         str | None,
         typer.Option("--project", "-p", help="Filter by project name"),
     ] = None,
+    sort: Annotated[
+        str,
+        typer.Option("--sort", "-s", help="Sort by: name, created, branch"),
+    ] = "name",
 ) -> None:
     """List all workspaces.
 
     Shows all git worktrees managed by AgentSpaces.
+
+    \b
+    Examples:
+        as workspace list                    # List workspaces for current repo
+        as workspace list -p myproject       # List workspaces for specific project
+        as workspace list --sort created     # Sort by creation date (newest first)
+        as workspace list -s branch          # Sort by branch name
     """
     # If no project specified, try to detect from current directory
     if project is None:
@@ -101,12 +120,21 @@ def list_workspaces(
             raise typer.Exit(1) from None
 
     try:
-        worktrees = _service.list()
+        workspaces = _service.list()
     except WorkspaceError as e:
         print_error(str(e))
         raise typer.Exit(1) from e
 
-    print_workspace_table(worktrees, project)
+    # Sort workspaces
+    if sort == "created":
+        # Sort by created_at, None values last, newest first
+        workspaces.sort(key=lambda w: w.created_at or datetime.min, reverse=True)
+    elif sort == "branch":
+        workspaces.sort(key=lambda w: w.branch.lower())
+    else:  # Default: sort by name
+        workspaces.sort(key=lambda w: w.name.lower())
+
+    print_workspace_table(workspaces, project)
 
 
 @app.command("remove")
@@ -128,6 +156,12 @@ def remove(
 
     This removes the git worktree and deletes the associated branch.
     WARNING: This cannot be undone!
+
+    \b
+    Examples:
+        as workspace remove eager-turing       # Remove with confirmation
+        as workspace remove eager-turing -y    # Skip confirmation
+        as workspace remove eager-turing -f    # Force remove dirty workspace
     """
     # Check we're not removing the current worktree
     try:

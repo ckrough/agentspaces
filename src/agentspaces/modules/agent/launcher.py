@@ -63,6 +63,7 @@ class AgentLauncher:
         *,
         cwd: Path | None = None,
         prompt: str | None = None,
+        plan_mode: bool = False,
     ) -> LaunchResult:
         """Launch Claude Code in a workspace.
 
@@ -71,6 +72,7 @@ class AgentLauncher:
                 then falls back to active workspace.
             cwd: Current working directory (for detection and project context).
             prompt: Optional initial prompt (e.g., workspace purpose).
+            plan_mode: If True, launch with --permission-mode plan flag.
 
         Returns:
             LaunchResult with workspace details and exit code.
@@ -129,10 +131,11 @@ class AgentLauncher:
             workspace=workspace_name,
             path=str(workspace.path),
             has_prompt=prompt is not None,
+            plan_mode=plan_mode,
         )
 
         try:
-            exit_code = claude.launch(workspace.path, prompt=prompt)
+            exit_code = claude.launch(workspace.path, prompt=prompt, plan_mode=plan_mode)
         except claude.ClaudeNotFoundError as e:
             raise AgentNotFoundError(str(e)) from e
         except claude.ClaudeError as e:

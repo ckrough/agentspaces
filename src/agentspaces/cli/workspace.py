@@ -74,6 +74,20 @@ def create(
             "--launch", "-l", help="Launch Claude Code in workspace after creation"
         ),
     ] = False,
+    plan_mode: Annotated[
+        bool,
+        typer.Option(
+            "--plan-mode",
+            help="Enable plan mode when launching (requires --launch)",
+        ),
+    ] = False,
+    no_plan_mode: Annotated[
+        bool,
+        typer.Option(
+            "--no-plan-mode",
+            help="Disable plan mode when launching (requires --launch)",
+        ),
+    ] = False,
 ) -> None:
     """Create a new isolated workspace from a branch.
 
@@ -92,6 +106,15 @@ def create(
         agentspaces workspace create feature/auth --attach  # Attach to existing branch
         agentspaces workspace create --launch             # Create and launch agent
     """
+    # Validate plan mode flags require --launch
+    if (plan_mode or no_plan_mode) and not launch:
+        print_error("--plan-mode and --no-plan-mode require --launch")
+        raise typer.Exit(1)
+
+    if plan_mode and no_plan_mode:
+        print_error("Cannot use both --plan-mode and --no-plan-mode")
+        raise typer.Exit(1)
+
     try:
         if attach:
             workspace = _service.create(
@@ -124,7 +147,12 @@ def create(
 
     # If --launch flag is set, launch agent; otherwise show next steps
     if launch:
-        _launch_agent_in_workspace(workspace.name, workspace.path)
+        _launch_agent_in_workspace(
+            workspace.name,
+            workspace.path,
+            plan_mode=plan_mode,
+            no_plan_mode=no_plan_mode,
+        )
     else:
         print_next_steps(
             workspace_name=workspace.name,
@@ -133,19 +161,41 @@ def create(
         )
 
 
-def _launch_agent_in_workspace(workspace_name: str, workspace_path: Path) -> None:
+def _launch_agent_in_workspace(
+    workspace_name: str,
+    workspace_path: Path,
+    plan_mode: bool = False,
+    no_plan_mode: bool = False,
+) -> None:
     """Launch Claude Code agent in a newly created workspace.
 
     Args:
         workspace_name: Name of the workspace.
         workspace_path: Path to the workspace directory.
+        plan_mode: Enable plan mode explicitly.
+        no_plan_mode: Disable plan mode explicitly.
     """
+    # Determine plan mode setting: CLI flag > config > default
+    from agentspaces.cli.context import CLIContext
+
+    effective_plan_mode = False
+    if no_plan_mode:
+        effective_plan_mode = False  # Explicit override to disable
+    elif plan_mode:
+        effective_plan_mode = True  # Explicit override to enable
+    else:
+        # Use config default
+        ctx = CLIContext.get()
+        config = ctx.get_config()
+        effective_plan_mode = config.plan_mode_by_default
+
     print_info(f"Launching Claude Code in '{workspace_name}'...")
 
     launcher = AgentLauncher()
     try:
         result = launcher.launch_claude(
             workspace_name,
+            plan_mode=effective_plan_mode,
             cwd=workspace_path,
         )
 

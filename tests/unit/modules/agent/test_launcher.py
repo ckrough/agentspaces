@@ -116,6 +116,7 @@ class TestAgentLauncherLaunchClaude:
             mock_launch.assert_called_once_with(
                 temp_dir / "test-workspace",
                 prompt=None,
+                plan_mode=False,
             )
 
     def test_launch_claude_with_prompt(self, temp_dir: Path) -> None:
@@ -147,6 +148,7 @@ class TestAgentLauncherLaunchClaude:
             mock_launch.assert_called_once_with(
                 temp_dir / "test-workspace",
                 prompt="Fix the bug",
+                plan_mode=False,
             )
 
     def test_launch_claude_not_installed(self, temp_dir: Path) -> None:

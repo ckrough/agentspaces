@@ -63,7 +63,7 @@ def create(
     ] = None,
     python_version: Annotated[
         str | None,
-        typer.Option("--python", help="Python version for venv (e.g., 3.12)"),
+        typer.Option("--python", help="Python version for venv (e.g., 3.13)"),
     ] = None,
     no_venv: Annotated[
         bool,

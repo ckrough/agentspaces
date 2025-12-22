@@ -84,7 +84,7 @@ class TestVenvCreate:
         venv_path = temp_dir / ".venv"
 
         # Use the current Python version
-        uv.venv_create(venv_path, python_version="3.12")
+        uv.venv_create(venv_path, python_version="3.13")
 
         assert venv_path.exists()
 
@@ -104,7 +104,7 @@ class TestVenvCreate:
         venv_path = temp_dir / ".venv"
 
         with pytest.raises(ValueError, match="Invalid Python version format"):
-            uv.venv_create(venv_path, python_version="3.12; rm -rf /")
+            uv.venv_create(venv_path, python_version="3.13; rm -rf /")
 
 
 class TestDetectPythonVersion:
@@ -112,24 +112,24 @@ class TestDetectPythonVersion:
 
     def test_detect_from_python_version_file(self, temp_dir: Path) -> None:
         """Should detect version from .python-version file."""
-        (temp_dir / ".python-version").write_text("3.12\n")
+        (temp_dir / ".python-version").write_text("3.13\n")
 
         version = uv.detect_python_version(temp_dir)
 
-        assert version == "3.12"
+        assert version == "3.13"
 
     def test_detect_from_pyproject_toml(self, temp_dir: Path) -> None:
         """Should detect version from pyproject.toml."""
         pyproject_content = """
 [project]
 name = "test"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 """
         (temp_dir / "pyproject.toml").write_text(pyproject_content)
 
         version = uv.detect_python_version(temp_dir)
 
-        assert version == "3.12"
+        assert version == "3.13"
 
     def test_detect_from_pyproject_toml_with_upper_bound(self, temp_dir: Path) -> None:
         """Should detect version from requires-python with upper bound."""
@@ -170,7 +170,7 @@ class TestParseRequiresPython:
 
     def test_parse_gte_constraint(self) -> None:
         """Should parse >=X.Y constraint."""
-        assert uv._parse_requires_python(">=3.12") == "3.12"
+        assert uv._parse_requires_python(">=3.13") == "3.13"
 
     def test_parse_tilde_constraint(self) -> None:
         """Should parse ~=X.Y constraint."""
@@ -182,7 +182,7 @@ class TestParseRequiresPython:
 
     def test_parse_with_upper_bound(self) -> None:
         """Should extract lower bound from range."""
-        assert uv._parse_requires_python(">=3.12,<4") == "3.12"
+        assert uv._parse_requires_python(">=3.13,<4") == "3.13"
 
     def test_parse_invalid_returns_none(self) -> None:
         """Should return None for invalid constraint."""
@@ -240,19 +240,19 @@ class TestDetectPythonVersionMalformed:
     def test_python_version_file_with_trailing_newline(self, temp_dir: Path) -> None:
         """Should handle .python-version files with trailing newlines."""
         # Standard format: version followed by newline
-        (temp_dir / ".python-version").write_text("3.12\n")
+        (temp_dir / ".python-version").write_text("3.13\n")
 
         version = uv.detect_python_version(temp_dir)
 
-        assert version == "3.12"
+        assert version == "3.13"
 
     def test_python_version_file_with_patch_version(self, temp_dir: Path) -> None:
-        """Should handle full patch versions like 3.12.1."""
-        (temp_dir / ".python-version").write_text("3.12.1\n")
+        """Should handle full patch versions like 3.13.1."""
+        (temp_dir / ".python-version").write_text("3.13.1\n")
 
         version = uv.detect_python_version(temp_dir)
 
-        assert version == "3.12.1"
+        assert version == "3.13.1"
 
     def test_malformed_pyproject_toml(self, temp_dir: Path) -> None:
         """Should return None for malformed pyproject.toml."""

@@ -30,7 +30,7 @@ __all__ = [
 
 logger = structlog.get_logger()
 
-# Valid Python version pattern: X.Y or X.Y.Z (e.g., "3.12", "3.12.1")
+# Valid Python version pattern: X.Y or X.Y.Z (e.g., "3.13", "3.13.1")
 _PYTHON_VERSION_PATTERN = re.compile(r"^3\.\d{1,2}(\.\d{1,2})?$")
 
 # Default timeout for uv operations (60 seconds - longer for installs)
@@ -162,7 +162,7 @@ def venv_create(
 
     Args:
         path: Path where the venv will be created.
-        python_version: Python version to use (e.g., "3.12", "3.13").
+        python_version: Python version to use (e.g., "3.13", "3.13").
         seed: Whether to seed with pip/setuptools.
 
     Raises:
@@ -176,7 +176,7 @@ def venv_create(
         if not _PYTHON_VERSION_PATTERN.match(python_version):
             raise ValueError(
                 f"Invalid Python version format: {python_version}. "
-                "Expected format: X.Y or X.Y.Z (e.g., '3.12', '3.12.1')"
+                "Expected format: X.Y or X.Y.Z (e.g., '3.13', '3.13.1')"
             )
         args.extend(["--python", python_version])
 
@@ -253,7 +253,7 @@ def detect_python_version(project_path: Path) -> str | None:
         project_path: Path to the project directory.
 
     Returns:
-        Python version string (e.g., "3.12") or None if not detected.
+        Python version string (e.g., "3.13") or None if not detected.
     """
     # Check .python-version file
     python_version_file = project_path / ".python-version"
@@ -277,7 +277,7 @@ def detect_python_version(project_path: Path) -> str | None:
             # Look for requires-python in [project]
             requires_python = data.get("project", {}).get("requires-python", "")
             if requires_python:
-                # Extract version from constraint like ">=3.12" or ">=3.12,<4"
+                # Extract version from constraint like ">=3.13" or ">=3.13,<4"
                 parsed_version = _parse_requires_python(requires_python)
                 if parsed_version:
                     logger.debug(
@@ -299,12 +299,12 @@ def _parse_requires_python(constraint: str) -> str | None:
     """Parse a requires-python constraint to extract a version.
 
     Args:
-        constraint: Version constraint like ">=3.12" or ">=3.12,<4".
+        constraint: Version constraint like ">=3.13" or ">=3.13,<4".
 
     Returns:
-        Version string like "3.12" or None.
+        Version string like "3.13" or None.
     """
-    # Match patterns like ">=3.12", "~=3.12", "==3.12"
+    # Match patterns like ">=3.13", "~=3.13", "==3.13"
     match = re.search(r"[>=~=]+\s*(\d+\.\d+)", constraint)
     if match:
         return match.group(1)

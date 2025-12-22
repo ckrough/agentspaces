@@ -126,7 +126,7 @@ class TestGenerateWorkspaceContextSkill:
             branch="test-workspace",
             base_branch="main",
             created_at=datetime.now(UTC),
-            python_version="3.12",
+            python_version="3.13",
             has_venv=True,
         )
         output_dir = temp_dir / "skills" / "workspace-context"
@@ -134,7 +134,7 @@ class TestGenerateWorkspaceContextSkill:
         result = generate_workspace_context_skill(metadata, output_dir)
 
         content = result.read_text(encoding="utf-8")
-        assert "3.12" in content
+        assert "3.13" in content
 
     def test_overwrites_existing_skill(self, temp_dir: Path) -> None:
         """Should overwrite existing skill file."""

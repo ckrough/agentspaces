@@ -25,6 +25,10 @@ The application version must be maintained in **two locations** that must stay s
    - Published to PyPI package metadata
    - Required for `pip install` and package distribution
 
+**Automated Validation:**
+
+A CI check (`scripts/check_version.py`) automatically validates that both files contain the same version on every pull request. This prevents version drift from reaching the main branch.
+
 ### Semantic Versioning
 
 agentspaces follows [Semantic Versioning 2.0.0](https://semver.org/):
@@ -58,9 +62,108 @@ MAJOR.MINOR.PATCH
 - MINOR version changes may include breaking changes until 1.0.0
 - Document all breaking changes in release notes
 
+### Conventional Commits
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) for commit messages. This enables automated versioning and CHANGELOG generation.
+
+**Commit Message Format:**
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer]
+```
+
+**Types that trigger releases:**
+- `feat`: New feature (triggers MINOR version bump)
+- `fix`: Bug fix (triggers PATCH version bump)
+- `perf`: Performance improvement (triggers PATCH version bump)
+
+**Types that don't trigger releases:**
+- `docs`: Documentation changes
+- `style`: Code style changes (formatting, etc.)
+- `refactor`: Code refactoring without behavior change
+- `test`: Adding or updating tests
+- `chore`: Maintenance tasks
+- `ci`: CI/CD changes
+- `build`: Build system changes
+
+**Breaking Changes:**
+Add `!` after type or `BREAKING CHANGE:` in footer to trigger MAJOR version bump:
+```
+feat!: remove workspace sync command
+
+BREAKING CHANGE: The sync command has been removed. Use create instead.
+```
+
+**Examples:**
+```bash
+feat: add workspace sync command
+fix: handle missing .python-version file
+docs: update README with installation instructions
+refactor: extract path resolution to infrastructure
+feat(cli)!: change workspace create to require branch argument
+```
+
 ## Release Process
 
-### 1. Prepare the Release
+### Automated Release (Recommended)
+
+The project uses [python-semantic-release](https://python-semantic-release.readthedocs.io/) for automated versioning and releases.
+
+**How it works:**
+
+1. **Commit with conventional commits** to main branch
+2. **GitHub Actions automatically**:
+   - Analyzes commit messages since last release
+   - Determines version bump (major/minor/patch)
+   - Updates version in `__init__.py` and `pyproject.toml`
+   - Generates CHANGELOG.md entries
+   - Creates git tag (`vX.Y.Z`)
+   - Creates GitHub release with notes
+   - Validates version consistency
+
+**Workflow:**
+
+```bash
+# 1. Make changes and commit using conventional commits
+git add .
+git commit -m "feat: add new workspace feature"
+
+# 2. Push to main (directly or via PR merge)
+git push origin main
+
+# 3. GitHub Actions automatically creates release
+# - Version is bumped based on commit type
+# - Tag and GitHub release are created
+# - CHANGELOG is updated
+```
+
+**Version determination:**
+- `feat:` commits → MINOR version bump (0.1.0 → 0.2.0)
+- `fix:` or `perf:` commits → PATCH version bump (0.1.0 → 0.1.1)
+- `feat!:` or `BREAKING CHANGE:` → MAJOR version bump (0.1.0 → 1.0.0)
+- Other commits (docs, chore, etc.) → No release
+
+**Skip automatic release:**
+
+Add `[skip ci]` to your commit message to prevent automatic release:
+```bash
+git commit -m "docs: update README [skip ci]"
+```
+
+### Manual Release (Special Cases)
+
+Use manual releases only when:
+- Testing the release process locally
+- Creating a release without CI/CD (e.g., initial setup)
+- Recovering from a failed automated release
+- Creating a hotfix outside the normal workflow
+
+For normal development, **always use the automated release process**.
+
+#### 1. Prepare the Release
 
 **a. Ensure clean working tree:**
 ```bash
@@ -91,10 +194,15 @@ __version__ = "0.2.0"
 version = "0.2.0"
 ```
 
-**d. Verify version display:**
+**d. Verify version display and consistency:**
 ```bash
+# Test the CLI displays the new version
 uv run agentspaces --version
 # Should output: agentspaces 0.2.0
+
+# Run the CI version validation check
+python scripts/check_version.py
+# Should output: ✅ Version consistency check passed: 0.2.0
 ```
 
 ### 2. Create Release Commit
@@ -207,6 +315,17 @@ python -c "from agentspaces import __version__; print(__version__)"
 git describe --tags --abbrev=0
 ```
 
+### Validate version consistency
+
+```bash
+# Run the CI validation check locally
+python scripts/check_version.py
+
+# Or check both locations manually
+grep "__version__" src/agentspaces/__init__.py
+grep "^version" pyproject.toml
+```
+
 ### List all versions
 
 ```bash
@@ -254,17 +373,31 @@ git push origin :refs/tags/v0.2.0
 
 ## Version History
 
-Track major releases here:
+This section provides a high-level summary of major releases. For detailed changes, see [CHANGELOG.md](CHANGELOG.md).
 
-- **v0.1.0** (Current) - Initial release
+**When to update:** After each release (automated or manual), add an entry here summarizing the major themes and breaking changes.
+
+**Format:**
+```
+- **vX.Y.Z** (YYYY-MM-DD) - Brief description
+  - Key feature or change
+  - Breaking changes (if any)
+```
+
+### Releases
+
+- **v0.1.0** (2024-12-22) - Initial release
   - Core workspace management
   - Git worktree integration
   - Basic CLI commands
 
 ## Notes
 
+- **Automated releases**: CHANGELOG.md is automatically updated by semantic-release
+- **Manual releases**: Update CHANGELOG.md manually before creating the release
 - Never manually edit version in one location without updating the other
 - Always use annotated tags (`-a` flag) for releases
 - Tag names must match version with 'v' prefix (e.g., `v0.2.0`)
 - Test the version command before creating tags
-- Keep this document updated with each release
+- Use conventional commit messages to enable automated versioning
+- Keep the Version History section updated with major release summaries

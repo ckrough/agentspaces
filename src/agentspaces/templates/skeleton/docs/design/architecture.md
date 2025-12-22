@@ -69,7 +69,7 @@ variables:
 
 ## Tech Stack
 
-### Backend (Python {{ python_version | default("3.12+") }})
+### Backend (Python {{ python_version | default("3.13") }})
 
 {% if tech_stack_backend %}
 | Component | Choice | Rationale |

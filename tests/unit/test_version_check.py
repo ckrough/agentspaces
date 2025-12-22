@@ -5,10 +5,15 @@ from __future__ import annotations
 import re
 import subprocess
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING
 
+# Import the functions to test them directly
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from scripts.check_version import get_init_version, get_pyproject_version
+
 if TYPE_CHECKING:
-    from pathlib import Path
+    pass
 
 
 def test_version_check_passes_on_consistent_versions() -> None:
@@ -100,3 +105,91 @@ if not init_file.exists():
     assert result.returncode == 1
     assert "Error" in result.stderr
     assert "not found" in result.stderr
+
+
+# Unit tests for individual functions
+
+
+def test_get_init_version_extracts_version(tmp_path: Path) -> None:
+    """get_init_version should extract version from __init__.py."""
+    init_file = tmp_path / "__init__.py"
+    init_file.write_text('__version__ = "1.2.3"\n', encoding="utf-8")
+
+    version = get_init_version(init_file)
+
+    assert version == "1.2.3"
+
+
+def test_get_init_version_handles_single_quotes(tmp_path: Path) -> None:
+    """get_init_version should handle single-quoted versions."""
+    init_file = tmp_path / "__init__.py"
+    init_file.write_text("__version__ = '4.5.6'\n", encoding="utf-8")
+
+    version = get_init_version(init_file)
+
+    assert version == "4.5.6"
+
+
+def test_get_init_version_returns_none_when_not_found(tmp_path: Path) -> None:
+    """get_init_version should return None if no version found."""
+    init_file = tmp_path / "__init__.py"
+    init_file.write_text("# No version here\n", encoding="utf-8")
+
+    version = get_init_version(init_file)
+
+    assert version is None
+
+
+def test_get_pyproject_version_extracts_version(tmp_path: Path) -> None:
+    """get_pyproject_version should extract version from pyproject.toml."""
+    pyproject_file = tmp_path / "pyproject.toml"
+    pyproject_file.write_text(
+        '[project]\nname = "test"\nversion = "2.3.4"\n', encoding="utf-8"
+    )
+
+    version = get_pyproject_version(pyproject_file)
+
+    assert version == "2.3.4"
+
+
+def test_get_pyproject_version_handles_complex_toml(tmp_path: Path) -> None:
+    """get_pyproject_version should handle complex TOML structure."""
+    pyproject_file = tmp_path / "pyproject.toml"
+    pyproject_file.write_text(
+        """
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+
+[project]
+name = "test"
+version = "3.4.5"
+
+[tool.other]
+version = "9.9.9"
+""",
+        encoding="utf-8",
+    )
+
+    version = get_pyproject_version(pyproject_file)
+
+    assert version == "3.4.5"
+
+
+def test_get_pyproject_version_returns_none_for_missing_section(tmp_path: Path) -> None:
+    """get_pyproject_version should return None if project section missing."""
+    pyproject_file = tmp_path / "pyproject.toml"
+    pyproject_file.write_text('[tool.other]\nfoo = "bar"\n', encoding="utf-8")
+
+    version = get_pyproject_version(pyproject_file)
+
+    assert version is None
+
+
+def test_get_pyproject_version_returns_none_for_invalid_toml(tmp_path: Path) -> None:
+    """get_pyproject_version should return None for invalid TOML."""
+    pyproject_file = tmp_path / "pyproject.toml"
+    pyproject_file.write_text("invalid [ toml ]\n", encoding="utf-8")
+
+    version = get_pyproject_version(pyproject_file)
+
+    assert version is None

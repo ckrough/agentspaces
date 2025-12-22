@@ -54,4 +54,4 @@ jobs:
 
       - name: Verify version consistency
         if: success()
-        run: python scripts/check_version.py
+        run: uv run python scripts/check_version.py

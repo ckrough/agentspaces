@@ -26,7 +26,7 @@ def get_init_version(init_file: Path) -> str | None:
     Returns:
         Version string if found, None otherwise.
     """
-    content = init_file.read_text()
+    content = init_file.read_text(encoding="utf-8")
     match = re.search(r'^__version__\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
     return match.group(1) if match else None
 
@@ -41,7 +41,7 @@ def get_pyproject_version(pyproject_file: Path) -> str | None:
         Version string if found, None otherwise.
     """
     try:
-        content = pyproject_file.read_text()
+        content = pyproject_file.read_text(encoding="utf-8")
         data = tomllib.loads(content)
         return data.get("project", {}).get("version")
     except (tomllib.TOMLDecodeError, KeyError):

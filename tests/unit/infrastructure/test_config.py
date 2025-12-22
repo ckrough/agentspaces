@@ -32,7 +32,7 @@ class TestGlobalConfig:
         """Should have sensible defaults."""
         config = GlobalConfig()
 
-        assert config.plan_mode_by_default is False
+        assert config.plan_mode_by_default is True
 
     def test_config_can_be_created_with_values(self) -> None:
         """Can create config with custom values."""
@@ -51,7 +51,7 @@ class TestLoadGlobalConfig:
         config = load_global_config(resolver)
 
         assert isinstance(config, GlobalConfig)
-        assert config.plan_mode_by_default is False
+        assert config.plan_mode_by_default is True
 
     def test_loads_config_from_file(self, tmp_path: Path) -> None:
         """Loads configuration from JSON file."""
@@ -84,7 +84,7 @@ class TestLoadGlobalConfig:
 
         # Should return defaults, not raise
         assert isinstance(config, GlobalConfig)
-        assert config.plan_mode_by_default is False
+        assert config.plan_mode_by_default is True
 
     def test_handles_schema_version_mismatch(self, tmp_path: Path) -> None:
         """Handles schema version mismatches gracefully."""
@@ -121,7 +121,7 @@ class TestLoadGlobalConfig:
 
         # Should return defaults
         assert isinstance(config, GlobalConfig)
-        assert config.plan_mode_by_default is False
+        assert config.plan_mode_by_default is True
 
     def test_handles_missing_fields_with_defaults(self, tmp_path: Path) -> None:
         """Uses defaults for missing fields."""
@@ -134,7 +134,7 @@ class TestLoadGlobalConfig:
 
         config = load_global_config(resolver)
 
-        assert config.plan_mode_by_default is False
+        assert config.plan_mode_by_default is True
 
 
 class TestSaveGlobalConfig:

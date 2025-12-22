@@ -46,7 +46,7 @@ class GlobalConfig:
             for agent launches unless overridden with --no-plan-mode.
     """
 
-    plan_mode_by_default: bool = False
+    plan_mode_by_default: bool = True
 
 
 def save_global_config(
@@ -186,7 +186,7 @@ def _dict_to_config(data: dict[str, Any]) -> GlobalConfig:
     Raises:
         TypeError: If field has invalid type.
     """
-    plan_mode = data.get("plan_mode_by_default", False)
+    plan_mode = data.get("plan_mode_by_default", True)
     if not isinstance(plan_mode, bool):
         raise TypeError(
             f"plan_mode_by_default must be bool, got {type(plan_mode).__name__}"

@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Workspace orchestration tool for AI coding agents"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 authors = [{ name = "Chris Krough" }]
 keywords = ["ai", "agents", "workspace", "git", "worktree", "claude", "skills"]
 classifiers = [
@@ -17,7 +17,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Version Control :: Git",
 ]
@@ -40,6 +39,7 @@ dev = [
     "mypy>=1.13.0",
     "ruff>=0.8.0",
     "types-pyyaml>=6.0.0",
+    "python-semantic-release>=9.0.0",
 ]
 
 [project.scripts]
@@ -63,7 +63,7 @@ include = [
 ]
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py313"
 line-length = 88
 src = ["src", "tests"]
 
@@ -88,7 +88,7 @@ ignore = ["E501"]  # Line too long (handled by formatter)
 known-first-party = ["agentspaces"]
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.13"
 strict = true
 warn_return_any = true
 warn_unused_ignores = true
@@ -126,3 +126,51 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "raise NotImplementedError",
 ]
+
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+version_variables = ["src/agentspaces/__init__.py:__version__"]
+build_command = "uv build"
+major_on_zero = true
+tag_format = "v{version}"
+
+[tool.semantic_release.branches.main]
+match = "main"
+prerelease = false
+
+[tool.semantic_release.changelog]
+changelog_file = "CHANGELOG.md"
+exclude_commit_patterns = [
+    "chore\\(release\\):.*",
+    "Merge.*",
+]
+
+[tool.semantic_release.changelog.environment]
+block_start_string = "{%"
+block_end_string = "%}"
+variable_start_string = "{{"
+variable_end_string = "}}"
+comment_start_string = "{#"
+comment_end_string = "#}"
+trim_blocks = false
+lstrip_blocks = false
+newline_sequence = "\n"
+keep_trailing_newline = false
+extensions = []
+autoescape = true
+
+[tool.semantic_release.commit_parser_options]
+allowed_tags = [
+    "feat",
+    "fix",
+    "docs",
+    "style",
+    "refactor",
+    "perf",
+    "test",
+    "chore",
+    "ci",
+    "build",
+]
+minor_tags = ["feat"]
+patch_tags = ["fix", "perf"]

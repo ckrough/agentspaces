@@ -18,13 +18,13 @@ class TestEnvironmentInfo:
         """EnvironmentInfo should store all environment details."""
         info = environment.EnvironmentInfo(
             has_venv=True,
-            python_version="3.12",
+            python_version="3.13",
             has_pyproject=True,
             venv_path=Path("/some/path/.venv"),
         )
 
         assert info.has_venv is True
-        assert info.python_version == "3.12"
+        assert info.python_version == "3.13"
         assert info.has_pyproject is True
         assert info.venv_path == Path("/some/path/.venv")
 
@@ -42,7 +42,7 @@ class TestSetupEnvironment:
 
     def test_setup_environment_with_python_version(self, temp_dir: Path) -> None:
         """Should use specified Python version."""
-        result = environment.setup_environment(temp_dir, python_version="3.12")
+        result = environment.setup_environment(temp_dir, python_version="3.13")
 
         assert result.has_venv is True
         # The version should be set (may include patch version)
@@ -50,7 +50,7 @@ class TestSetupEnvironment:
 
     def test_setup_environment_detects_version(self, temp_dir: Path) -> None:
         """Should auto-detect Python version."""
-        (temp_dir / ".python-version").write_text("3.12\n")
+        (temp_dir / ".python-version").write_text("3.13\n")
 
         result = environment.setup_environment(temp_dir)
 
@@ -65,7 +65,7 @@ class TestSetupEnvironment:
 [project]
 name = "test-project"
 version = "0.1.0"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = []
 """
         (temp_dir / "pyproject.toml").write_text(pyproject_content)
@@ -228,7 +228,7 @@ class TestEnvironmentInfoFrozen:
 
         info = environment.EnvironmentInfo(
             has_venv=True,
-            python_version="3.12",
+            python_version="3.13",
             has_pyproject=True,
             venv_path=Path("/some/path/.venv"),
         )

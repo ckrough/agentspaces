@@ -26,7 +26,7 @@ class TestWorkspaceInfo:
             branch="test-workspace",
             base_branch="main",
             project="test-project",
-            python_version="3.12",
+            python_version="3.13",
             has_venv=True,
         )
 
@@ -35,7 +35,7 @@ class TestWorkspaceInfo:
         assert info.branch == "test-workspace"
         assert info.base_branch == "main"
         assert info.project == "test-project"
-        assert info.python_version == "3.12"
+        assert info.python_version == "3.13"
         assert info.has_venv is True
 
     def test_workspace_info_defaults(self) -> None:

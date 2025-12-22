@@ -66,7 +66,7 @@ Single CLI application with clear layer boundaries. Dependencies flow downward o
 
 ## Tech Stack
 
-### Core (Python 3.12+)
+### Core (Python 3.13)
 
 | Component | Choice | Rationale |
 |-----------|--------|-----------|

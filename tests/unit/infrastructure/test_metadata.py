@@ -61,7 +61,7 @@ class TestWorkspaceMetadata:
             base_branch="main",
             created_at=created_at,
             purpose="Test purpose",
-            python_version="3.12",
+            python_version="3.13",
             has_venv=True,
             status="active",
         )
@@ -72,7 +72,7 @@ class TestWorkspaceMetadata:
         assert metadata.base_branch == "main"
         assert metadata.created_at == created_at
         assert metadata.purpose == "Test purpose"
-        assert metadata.python_version == "3.12"
+        assert metadata.python_version == "3.13"
         assert metadata.has_venv is True
         assert metadata.status == "active"
 

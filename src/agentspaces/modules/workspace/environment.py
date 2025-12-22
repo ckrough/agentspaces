@@ -153,7 +153,7 @@ def _get_venv_python_version(workspace_path: Path) -> str | None:
         try:
             for line in pyvenv_cfg.read_text(encoding="utf-8").splitlines():
                 if line.startswith("version"):
-                    # Line like "version = 3.12.0"
+                    # Line like "version = 3.13.0"
                     parts = line.split("=")
                     if len(parts) >= 2:
                         full_version = parts[1].strip()

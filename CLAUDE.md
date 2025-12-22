@@ -108,15 +108,60 @@ uv run mypy src/                       # Type check
 
 ## Conventions
 
-- Python 3.12+
+- Python 3.13
 - Type hints on all functions
 - Google-style docstrings
 - `ruff` for linting/formatting
 - `mypy --strict` for type checking
 - 80% test coverage target
 
+## Versioning and Releases
+
+### Commit Messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) for all commit messages:
+
+```
+<type>(<scope>): <description>
+```
+
+**Common types:**
+- `feat`: New feature (triggers minor version bump)
+- `fix`: Bug fix (triggers patch version bump)
+- `docs`: Documentation only changes
+- `refactor`: Code refactoring without behavior change
+- `test`: Adding or updating tests
+- `chore`: Maintenance tasks
+
+**Breaking changes:**
+Add `!` after type to trigger major version bump:
+```
+feat!: change workspace create to require branch argument
+```
+
+### CHANGELOG
+
+- **CHANGELOG.md** is automatically updated by semantic-release on each release
+- Entries are generated from conventional commit messages
+- Unreleased changes are tracked in the `[Unreleased]` section
+- Never manually edit the automated sections
+- For manual releases, update CHANGELOG.md before tagging
+
+### Release Process
+
+Releases are automated via GitHub Actions when commits are pushed to `main`:
+1. Commit with conventional commit message
+2. Push to main (or merge PR)
+3. GitHub Actions analyzes commits and creates release if needed
+4. Version is bumped, CHANGELOG is updated, and tag is created
+
+See [RELEASING.md](RELEASING.md) for full details on versioning and releases.
+
 ## Documentation
 
 - [TODO.md](TODO.md) - Active task list
+- [CONTRIBUTING.md](CONTRIBUTING.md) - Development guide
+- [RELEASING.md](RELEASING.md) - Version management and release process
+- [CHANGELOG.md](CHANGELOG.md) - Project changelog (auto-generated)
 - [docs/design/architecture.md](docs/design/architecture.md) - System design
 - [docs/adr/](docs/adr/) - Architecture decisions

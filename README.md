@@ -14,7 +14,7 @@ Workspace orchestration for AI coding agents. Manage isolated workspaces for par
 
 ### Prerequisites
 
-- Python 3.12+
+- Python 3.13
 - Git
 - [uv](https://docs.astral.sh/uv/) (Python package manager)
 

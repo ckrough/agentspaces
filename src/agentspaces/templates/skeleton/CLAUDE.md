@@ -20,7 +20,7 @@ variables:
 # {{ project_name }}
 
 ## Tech Stack
-{{ tech_stack | default("Python 3.12+, pytest, ruff, mypy") }}
+{{ tech_stack | default("Python 3.13, pytest, ruff, mypy") }}
 {% if dependencies %}
 Dependencies: {{ dependencies }}
 {% endif %}

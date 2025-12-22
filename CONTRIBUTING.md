@@ -6,7 +6,7 @@ This guide covers development setup, project architecture, and contribution guid
 
 ### Prerequisites
 
-- Python 3.12+
+- Python 3.13
 - Git
 - [uv](https://docs.astral.sh/uv/) for Python package management
 
@@ -181,7 +181,7 @@ uv run pytest
 
 ### Python Version
 
-Target Python 3.12+. Use modern Python features:
+Target Python 3.13. Use modern Python features:
 
 - Type hints on all function signatures (including `-> None`)
 - `collections.abc` types for abstract containers
@@ -404,6 +404,10 @@ refactor: extract path resolution to infrastructure
 docs: update README with new commands
 test: add coverage for edge cases in naming
 ```
+
+## Releasing
+
+For version management and release procedures, see [RELEASING.md](RELEASING.md).
 
 ## Questions?
 

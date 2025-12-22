@@ -43,7 +43,7 @@ variables:
 - {{ prereq }}
 {% endfor %}
 {% else %}
-- Python 3.12+
+- Python 3.13
 - [uv](https://docs.astral.sh/uv/) (Python package manager)
 {% endif %}
 

@@ -6,14 +6,10 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 # Import the functions to test them directly
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from scripts.check_version import get_init_version, get_pyproject_version
-
-if TYPE_CHECKING:
-    pass
 
 
 def test_version_check_passes_on_consistent_versions() -> None:

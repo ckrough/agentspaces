@@ -118,5 +118,7 @@ uv run mypy src/                       # Type check
 ## Documentation
 
 - [TODO.md](TODO.md) - Active task list
+- [CONTRIBUTING.md](CONTRIBUTING.md) - Development guide
+- [RELEASING.md](RELEASING.md) - Version management and release process
 - [docs/design/architecture.md](docs/design/architecture.md) - System design
 - [docs/adr/](docs/adr/) - Architecture decisions

@@ -405,6 +405,10 @@ docs: update README with new commands
 test: add coverage for edge cases in naming
 ```
 
+## Releasing
+
+For version management and release procedures, see [RELEASING.md](RELEASING.md).
+
 ## Questions?
 
 Open an issue on GitHub for questions about contributing.

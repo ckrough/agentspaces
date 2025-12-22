@@ -72,9 +72,12 @@ def save_global_config(
     # Ensure parent directory exists
     path.parent.mkdir(parents=True, exist_ok=True)
 
+    tmp_path: Path | None = None
     try:
         # Atomic write: write to temp file, then rename
-        # This prevents corruption if process is interrupted
+        # This prevents corruption if process is interrupted.
+        # File handle is closed when exiting context, which is necessary
+        # for replace() to work correctly on all platforms.
         with tempfile.NamedTemporaryFile(
             mode="w",
             dir=path.parent,
@@ -85,14 +88,14 @@ def save_global_config(
             json.dump(data, tmp, indent=2)
             tmp_path = Path(tmp.name)
 
-        # Atomic rename
+        # Atomic rename (file handle closed, safe on all platforms)
         tmp_path.replace(path)
 
         logger.debug("config_saved", path=str(path))
 
     except OSError as e:
-        # Clean up temp file if rename failed
-        if "tmp_path" in locals():
+        # Clean up temp file if it was created
+        if tmp_path is not None:
             tmp_path.unlink(missing_ok=True)
         raise ConfigError(f"Failed to save config: {e}") from e
 
@@ -181,9 +184,12 @@ def _dict_to_config(data: dict[str, Any]) -> GlobalConfig:
         GlobalConfig instance.
 
     Raises:
-        KeyError: If required fields are missing.
         TypeError: If field has invalid type.
     """
-    return GlobalConfig(
-        plan_mode_by_default=data.get("plan_mode_by_default", False),
-    )
+    plan_mode = data.get("plan_mode_by_default", False)
+    if not isinstance(plan_mode, bool):
+        raise TypeError(
+            f"plan_mode_by_default must be bool, got {type(plan_mode).__name__}"
+        )
+
+    return GlobalConfig(plan_mode_by_default=plan_mode)

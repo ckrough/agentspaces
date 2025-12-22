@@ -36,6 +36,31 @@ app = typer.Typer(
 _launcher = AgentLauncher()
 
 
+def _resolve_plan_mode(plan_mode: bool, no_plan_mode: bool) -> bool:
+    """Resolve effective plan mode from CLI flags and config.
+
+    Priority: --no-plan-mode > --plan-mode > config default.
+
+    Args:
+        plan_mode: Explicit enable flag.
+        no_plan_mode: Explicit disable flag.
+
+    Returns:
+        Effective plan mode setting.
+    """
+    if no_plan_mode:
+        return False
+    if plan_mode:
+        return True
+
+    # Use config default
+    from agentspaces.cli.context import CLIContext
+
+    ctx = CLIContext.get()
+    config = ctx.get_config()
+    return config.plan_mode_by_default
+
+
 @app.command("launch")
 def launch(
     workspace: Annotated[
@@ -125,18 +150,7 @@ def launch(
             raise typer.Exit(1) from None
 
     # Determine plan mode setting: CLI flag > config > default
-    from agentspaces.cli.context import CLIContext
-
-    effective_plan_mode = False
-    if no_plan_mode:
-        effective_plan_mode = False  # Explicit override to disable
-    elif plan_mode:
-        effective_plan_mode = True  # Explicit override to enable
-    else:
-        # Use config default
-        ctx = CLIContext.get()
-        config = ctx.get_config()
-        effective_plan_mode = config.plan_mode_by_default
+    effective_plan_mode = _resolve_plan_mode(plan_mode, no_plan_mode)
 
     try:
         # Show which workspace we're launching in

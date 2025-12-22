@@ -16,6 +16,9 @@ class CLIContext:
     """Global CLI context for verbosity and other state.
 
     Uses singleton pattern to share state across all CLI commands.
+
+    Note: Mutable dataclass to allow setting verbose/quiet flags at runtime.
+    Assumes single-threaded CLI environment.
     """
 
     verbose: bool = False
@@ -44,8 +47,8 @@ class CLIContext:
         if self.config is None:
             from agentspaces.infrastructure.config import load_global_config
 
-            # Temporarily mutable to cache config
-            object.__setattr__(self, "config", load_global_config())
+            # Cache config after first load
+            self.config = load_global_config()
 
         assert self.config is not None  # Always set in the if block above
         return self.config

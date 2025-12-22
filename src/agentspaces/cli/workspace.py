@@ -9,6 +9,7 @@ from typing import Annotated
 
 import typer
 
+from agentspaces.cli.agent import _resolve_plan_mode
 from agentspaces.cli.formatters import (
     print_did_you_mean,
     print_error,
@@ -176,18 +177,7 @@ def _launch_agent_in_workspace(
         no_plan_mode: Disable plan mode explicitly.
     """
     # Determine plan mode setting: CLI flag > config > default
-    from agentspaces.cli.context import CLIContext
-
-    effective_plan_mode = False
-    if no_plan_mode:
-        effective_plan_mode = False  # Explicit override to disable
-    elif plan_mode:
-        effective_plan_mode = True  # Explicit override to enable
-    else:
-        # Use config default
-        ctx = CLIContext.get()
-        config = ctx.get_config()
-        effective_plan_mode = config.plan_mode_by_default
+    effective_plan_mode = _resolve_plan_mode(plan_mode, no_plan_mode)
 
     print_info(f"Launching Claude Code in '{workspace_name}'...")
 

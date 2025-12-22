@@ -73,9 +73,7 @@ class TestCLIContext:
         """get_config() should cache the loaded config."""
         ctx = CLIContext.get()
 
-        with patch(
-            "agentspaces.infrastructure.config.load_global_config"
-        ) as mock_load:
+        with patch("agentspaces.infrastructure.config.load_global_config") as mock_load:
             mock_load.return_value = GlobalConfig(plan_mode_by_default=True)
 
             # First call should load
@@ -92,9 +90,7 @@ class TestCLIContext:
         """reset() should clear the cached config."""
         ctx1 = CLIContext.get()
 
-        with patch(
-            "agentspaces.infrastructure.config.load_global_config"
-        ) as mock_load:
+        with patch("agentspaces.infrastructure.config.load_global_config") as mock_load:
             mock_load.return_value = GlobalConfig(plan_mode_by_default=True)
 
             # Load config
@@ -111,9 +107,7 @@ class TestCLIContext:
 
     def test_config_is_lazy_loaded(self) -> None:
         """Config should not be loaded until get_config() is called."""
-        with patch(
-            "agentspaces.infrastructure.config.load_global_config"
-        ) as mock_load:
+        with patch("agentspaces.infrastructure.config.load_global_config") as mock_load:
             mock_load.return_value = GlobalConfig()
 
             # Just getting the context should not load config

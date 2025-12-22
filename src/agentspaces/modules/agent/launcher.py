@@ -135,7 +135,9 @@ class AgentLauncher:
         )
 
         try:
-            exit_code = claude.launch(workspace.path, prompt=prompt, plan_mode=plan_mode)
+            exit_code = claude.launch(
+                workspace.path, prompt=prompt, plan_mode=plan_mode
+            )
         except claude.ClaudeNotFoundError as e:
             raise AgentNotFoundError(str(e)) from e
         except claude.ClaudeError as e:

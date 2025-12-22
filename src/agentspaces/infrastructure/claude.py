@@ -68,6 +68,7 @@ def launch(
     cwd: Path,
     *,
     prompt: str | None = None,
+    plan_mode: bool = False,
 ) -> int:
     """Launch Claude Code interactively.
 
@@ -77,6 +78,7 @@ def launch(
     Args:
         cwd: Working directory to launch in.
         prompt: Optional initial prompt/instruction (max 10000 chars).
+        plan_mode: If True, launch with --permission-mode plan flag.
 
     Returns:
         Exit code from Claude Code process.
@@ -88,6 +90,10 @@ def launch(
     """
     cmd = ["claude"]
 
+    # Add plan mode flag if enabled
+    if plan_mode:
+        cmd.extend(["--permission-mode", "plan"])
+
     if prompt:
         if len(prompt) > MAX_PROMPT_LENGTH:
             raise ValueError(
@@ -96,7 +102,12 @@ def launch(
         # Prompt is a positional argument in Claude Code CLI
         cmd.append(prompt)
 
-    logger.info("claude_launch", cwd=str(cwd), has_prompt=prompt is not None)
+    logger.info(
+        "claude_launch",
+        cwd=str(cwd),
+        has_prompt=prompt is not None,
+        plan_mode=plan_mode,
+    )
 
     try:
         # Interactive mode: don't capture output, stream to terminal

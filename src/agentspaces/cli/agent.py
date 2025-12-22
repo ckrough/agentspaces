@@ -36,6 +36,31 @@ app = typer.Typer(
 _launcher = AgentLauncher()
 
 
+def _resolve_plan_mode(plan_mode: bool, no_plan_mode: bool) -> bool:
+    """Resolve effective plan mode from CLI flags and config.
+
+    Priority: --no-plan-mode > --plan-mode > config default.
+
+    Args:
+        plan_mode: Explicit enable flag.
+        no_plan_mode: Explicit disable flag.
+
+    Returns:
+        Effective plan mode setting.
+    """
+    if no_plan_mode:
+        return False
+    if plan_mode:
+        return True
+
+    # Use config default
+    from agentspaces.cli.context import CLIContext
+
+    ctx = CLIContext.get()
+    config = ctx.get_config()
+    return config.plan_mode_by_default
+
+
 @app.command("launch")
 def launch(
     workspace: Annotated[
@@ -53,6 +78,20 @@ def launch(
         typer.Option(
             "--use-purpose",
             help="Use workspace purpose as initial prompt (mutually exclusive with --prompt)",
+        ),
+    ] = False,
+    plan_mode: Annotated[
+        bool,
+        typer.Option(
+            "--plan-mode",
+            help="Enable plan mode (explore before making changes)",
+        ),
+    ] = False,
+    no_plan_mode: Annotated[
+        bool,
+        typer.Option(
+            "--no-plan-mode",
+            help="Disable plan mode even if enabled in config",
         ),
     ] = False,
 ) -> None:
@@ -74,6 +113,11 @@ def launch(
         print_info(
             "Choose one: provide a prompt with -p, or use workspace purpose with --use-purpose"
         )
+        raise typer.Exit(1)
+
+    if plan_mode and no_plan_mode:
+        print_error("Cannot use both --plan-mode and --no-plan-mode")
+        print_info("Choose one or omit both to use config default")
         raise typer.Exit(1)
 
     # Handle --use-purpose flag
@@ -105,6 +149,9 @@ def launch(
             print_error(f"Could not read workspace: {e}")
             raise typer.Exit(1) from None
 
+    # Determine plan mode setting: CLI flag > config > default
+    effective_plan_mode = _resolve_plan_mode(plan_mode, no_plan_mode)
+
     try:
         # Show which workspace we're launching in
         if workspace:
@@ -115,6 +162,7 @@ def launch(
         result = _launcher.launch_claude(
             workspace,
             prompt=effective_prompt,
+            plan_mode=effective_plan_mode,
             cwd=Path.cwd(),
         )
 

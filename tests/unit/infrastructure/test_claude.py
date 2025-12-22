@@ -141,6 +141,48 @@ class TestLaunch:
             call_args = mock_run.call_args[0][0]
             assert call_args == ["claude", max_prompt]
 
+    def test_launch_with_plan_mode_enabled(self, tmp_path: Path) -> None:
+        """Should include --permission-mode plan flag when plan_mode=True."""
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0)
+
+            launch(tmp_path, plan_mode=True)
+
+            call_args = mock_run.call_args[0][0]
+            assert call_args == ["claude", "--permission-mode", "plan"]
+
+    def test_launch_with_plan_mode_and_custom_prompt(self, tmp_path: Path) -> None:
+        """Should include both plan mode flag and prompt when both provided."""
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0)
+
+            launch(tmp_path, prompt="Fix the bug", plan_mode=True)
+
+            call_args = mock_run.call_args[0][0]
+            assert call_args == ["claude", "--permission-mode", "plan", "Fix the bug"]
+
+    def test_launch_without_plan_mode(self, tmp_path: Path) -> None:
+        """Should not include plan mode flag when plan_mode=False."""
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0)
+
+            launch(tmp_path, plan_mode=False)
+
+            call_args = mock_run.call_args[0][0]
+            assert call_args == ["claude"]
+
+    def test_launch_default_plan_mode_is_false(self, tmp_path: Path) -> None:
+        """Plan mode should default to False when not specified."""
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0)
+
+            # Not passing plan_mode at all
+            launch(tmp_path)
+
+            call_args = mock_run.call_args[0][0]
+            # Should not include permission-mode flag
+            assert call_args == ["claude"]
+
 
 class TestExceptions:
     """Tests for exception classes."""

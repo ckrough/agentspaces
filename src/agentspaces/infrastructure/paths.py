@@ -50,15 +50,10 @@ class PathResolver:
 
     Storage layout:
         ~/.agentspaces/
-        ├── config.json
         └── <project>/
             └── <workspace-name>/
                 ├── .agentspace/
-                │   ├── workspace.json
-                │   ├── skills/
-                │   │   └── workspace-context/
-                │   │       └── SKILL.md
-                │   └── sessions/
+                │   └── workspace.json
                 ├── .venv/
                 └── <project files>
     """
@@ -123,47 +118,6 @@ class PathResolver:
         """
         return self.metadata_dir(project, workspace) / "workspace.json"
 
-    def skills_dir(self, project: str, workspace: str) -> Path:
-        """Skills directory within a workspace.
-
-        Args:
-            project: Project/repository name.
-            workspace: Workspace name.
-        """
-        return self.metadata_dir(project, workspace) / "skills"
-
-    def workspace_context_skill(self, project: str, workspace: str) -> Path:
-        """Path to workspace-context skill directory.
-
-        Args:
-            project: Project/repository name.
-            workspace: Workspace name.
-        """
-        return self.skills_dir(project, workspace) / "workspace-context"
-
-    def sessions_dir(self, project: str, workspace: str) -> Path:
-        """Sessions directory within a workspace.
-
-        Args:
-            project: Project/repository name.
-            workspace: Workspace name.
-        """
-        return self.metadata_dir(project, workspace) / "sessions"
-
-    def session_dir(self, project: str, workspace: str, session_id: str) -> Path:
-        """Directory for a specific session.
-
-        Args:
-            project: Project/repository name.
-            workspace: Workspace name.
-            session_id: Session identifier.
-
-        Raises:
-            InvalidNameError: If any name is invalid.
-        """
-        _validate_name(session_id, "session")
-        return self.sessions_dir(project, workspace) / session_id
-
     def venv_dir(self, project: str, workspace: str) -> Path:
         """Virtual environment directory.
 
@@ -215,17 +169,6 @@ class PathResolver:
             for d in self.base.iterdir()
             if d.is_dir() and d.name != "config.json"
         ]
-
-    def active_file(self, project: str) -> Path:
-        """Path to the .active file for a project.
-
-        Args:
-            project: Project/repository name.
-
-        Returns:
-            Path to the .active file.
-        """
-        return self.project_dir(project) / ".active"
 
 
 # Default resolver instance

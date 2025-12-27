@@ -37,12 +37,11 @@ src/agentspaces/
 │   ├── frontmatter.py         # YAML frontmatter parser
 │   └── logging.py             # structlog config
 └── templates/                 # Bundled project templates
-    ├── skeleton/              # Project skeleton templates
-    │   ├── CLAUDE.md          # Agent constitution template
-    │   ├── TODO.md            # Task list template
-    │   ├── .claude/           # Agent/command templates
-    │   └── docs/              # ADR and design templates
-    └── skills/                # Skill templates
+    └── skeleton/              # Project skeleton templates
+        ├── CLAUDE.md          # Agent constitution template
+        ├── TODO.md            # Task list template
+        ├── .claude/           # Agent/command templates
+        └── docs/              # ADR and design templates
 ```
 
 ## Architecture
@@ -68,19 +67,13 @@ A workspace is:
 - Metadata in `.agentspace/` directory
 - Optional Python venv in `.venv/`
 
-### Agent Skills
-
-Uses [agentskills.io](https://agentskills.io) standard:
-- `.github/skills/` for project-level skills
-- `.agentspace/skills/` for workspace-specific skills
-- Auto-discovered by compatible agents
-
 ## Commands
 
 ```bash
 # Workspaces
 agentspaces workspace create [branch]   # Create workspace
 agentspaces workspace list              # List workspaces
+agentspaces workspace status <name>     # Show workspace details
 agentspaces workspace remove <name>     # Remove workspace
 
 # Design templates

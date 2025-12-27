@@ -9,20 +9,12 @@ from pathlib import Path  # noqa: TC003 - used at runtime in dataclass
 import structlog
 
 from agentspaces.infrastructure import git
-from agentspaces.infrastructure.active import (
-    clear_active_workspace,
-    get_active_workspace,
-    set_active_workspace,
-)
 from agentspaces.infrastructure.metadata import (
     WorkspaceMetadata,
     load_workspace_metadata,
     save_workspace_metadata,
 )
 from agentspaces.infrastructure.paths import InvalidNameError, PathResolver
-from agentspaces.infrastructure.skills import (
-    generate_workspace_context_skill,
-)
 from agentspaces.modules.workspace import environment, worktree
 
 __all__ = [
@@ -52,8 +44,6 @@ class WorkspaceInfo:
     python_version: str | None = None
     has_venv: bool = False
     status: str = "active"
-    deps_synced_at: datetime | None = None
-    last_activity_at: datetime | None = None
 
 
 class WorkspaceError(Exception):
@@ -72,8 +62,7 @@ class WorkspaceService:
     """Service for managing workspace lifecycle.
 
     Handles creation, listing, and removal of workspaces.
-    Persists workspace metadata to JSON files and generates
-    workspace-context skills for agent discovery.
+    Persists workspace metadata to JSON files.
     """
 
     def __init__(self, resolver: PathResolver | None = None) -> None:
@@ -109,7 +98,7 @@ class WorkspaceService:
         """Create a new workspace.
 
         Creates a git worktree, sets up the Python environment,
-        persists workspace metadata, and generates a workspace-context skill.
+        and persists workspace metadata.
 
         Args:
             base_branch: Branch to create workspace from (ignored if attach_branch set).
@@ -220,14 +209,6 @@ class WorkspaceService:
                 )
             raise WorkspaceError(f"Failed to save workspace metadata: {e}") from e
 
-        # Generate workspace-context skill for agent discovery
-        skill_dir = self._resolver.workspace_context_skill(project, result.name)
-        try:
-            generate_workspace_context_skill(metadata, skill_dir)
-        except Exception as e:
-            # Skill generation is non-critical - warn and continue
-            logger.warning("skill_generation_failed", error=str(e))
-
         workspace = WorkspaceInfo(
             name=result.name,
             path=result.path,
@@ -299,8 +280,6 @@ class WorkspaceService:
                     python_version=metadata.python_version if metadata else None,
                     has_venv=metadata.has_venv if metadata else False,
                     status=metadata.status if metadata else "active",
-                    deps_synced_at=metadata.deps_synced_at if metadata else None,
-                    last_activity_at=metadata.last_activity_at if metadata else None,
                 )
             )
 
@@ -355,8 +334,6 @@ class WorkspaceService:
             if metadata
             else (workspace_path / ".venv").exists(),
             status=metadata.status if metadata else "active",
-            deps_synced_at=metadata.deps_synced_at if metadata else None,
-            last_activity_at=metadata.last_activity_at if metadata else None,
         )
 
     def remove(
@@ -422,182 +399,6 @@ class WorkspaceService:
             return project
         except git.GitError as e:
             raise WorkspaceError(f"Not in a git repository: {e.stderr}") from e
-
-    def get_active(self, *, cwd: Path | None = None) -> WorkspaceInfo | None:
-        """Get the currently active workspace.
-
-        Args:
-            cwd: Current working directory.
-
-        Returns:
-            WorkspaceInfo for the active workspace, or None if no active workspace.
-
-        Raises:
-            WorkspaceError: If not in a git repository.
-        """
-        try:
-            _, project = worktree.get_repo_info(cwd)
-        except git.GitError as e:
-            raise WorkspaceError(f"Not in a git repository: {e.stderr}") from e
-
-        project_dir = self._resolver.project_dir(project)
-        active_name = get_active_workspace(project_dir)
-
-        if active_name is None:
-            return None
-
-        try:
-            return self.get(active_name, cwd=cwd)
-        except WorkspaceNotFoundError:
-            # Active workspace no longer exists - clear stale reference
-            logger.warning(
-                "active_workspace_missing",
-                project=project,
-                workspace=active_name,
-            )
-            clear_active_workspace(project_dir)
-            return None
-
-    def set_active(self, name: str, *, cwd: Path | None = None) -> None:
-        """Set a workspace as the active workspace.
-
-        Args:
-            name: Workspace name.
-            cwd: Current working directory.
-
-        Raises:
-            WorkspaceNotFoundError: If workspace doesn't exist.
-            WorkspaceError: If operation fails.
-        """
-        # Verify workspace exists first
-        self.get(name, cwd=cwd)
-
-        try:
-            _, project = worktree.get_repo_info(cwd)
-        except git.GitError as e:
-            raise WorkspaceError(f"Not in a git repository: {e.stderr}") from e
-
-        project_dir = self._resolver.project_dir(project)
-        set_active_workspace(project_dir, name)
-
-        logger.info("workspace_activated", workspace=name, project=project)
-
-    def sync_deps(
-        self,
-        name: str | None = None,
-        *,
-        cwd: Path | None = None,
-    ) -> WorkspaceInfo:
-        """Sync dependencies for a workspace.
-
-        Args:
-            name: Workspace name. If None, uses active workspace or auto-detect.
-            cwd: Current working directory.
-
-        Returns:
-            Updated WorkspaceInfo with new deps_synced_at timestamp.
-
-        Raises:
-            WorkspaceNotFoundError: If workspace doesn't exist.
-            WorkspaceError: If sync fails.
-        """
-        # Determine workspace
-        if name is None:
-            # Try active workspace first
-            active = self.get_active(cwd=cwd)
-            if active is not None:
-                name = active.name
-            else:
-                raise WorkspaceError(
-                    "No workspace specified and no active workspace. "
-                    "Use 'agentspaces workspace sync <name>' or 'agentspaces workspace activate <name>'."
-                )
-
-        workspace = self.get(name, cwd=cwd)
-
-        try:
-            environment.sync_dependencies(workspace.path)
-        except environment.EnvironmentError as e:
-            raise WorkspaceError(str(e)) from e
-
-        # Update deps_synced_at timestamp
-        self._update_metadata_timestamp(
-            workspace.name,
-            workspace.project,
-            deps_synced_at=datetime.now(UTC),
-        )
-
-        logger.info("workspace_deps_synced", workspace=name)
-
-        # Return updated workspace info
-        return self.get(name, cwd=cwd)
-
-    def update_activity(self, name: str, *, cwd: Path | None = None) -> None:
-        """Update the last_activity_at timestamp for a workspace.
-
-        Called when an agent is launched or other activity occurs.
-
-        Args:
-            name: Workspace name.
-            cwd: Current working directory.
-
-        Raises:
-            WorkspaceNotFoundError: If workspace doesn't exist.
-            WorkspaceError: If update fails.
-        """
-        workspace = self.get(name, cwd=cwd)
-
-        self._update_metadata_timestamp(
-            workspace.name,
-            workspace.project,
-            last_activity_at=datetime.now(UTC),
-        )
-
-        logger.debug("workspace_activity_updated", workspace=name)
-
-    def _update_metadata_timestamp(
-        self,
-        name: str,
-        project: str,
-        *,
-        deps_synced_at: datetime | None = None,
-        last_activity_at: datetime | None = None,
-    ) -> None:
-        """Update timestamp fields in workspace metadata.
-
-        Args:
-            name: Workspace name.
-            project: Project name.
-            deps_synced_at: New deps_synced_at value.
-            last_activity_at: New last_activity_at value.
-        """
-        metadata_path = self._resolver.workspace_json(project, name)
-        metadata = load_workspace_metadata(metadata_path)
-
-        if metadata is None:
-            logger.warning(
-                "metadata_not_found_for_update",
-                workspace=name,
-                project=project,
-            )
-            return
-
-        # Create updated metadata with new timestamps
-        updated = WorkspaceMetadata(
-            name=metadata.name,
-            project=metadata.project,
-            branch=metadata.branch,
-            base_branch=metadata.base_branch,
-            created_at=metadata.created_at,
-            purpose=metadata.purpose,
-            python_version=metadata.python_version,
-            has_venv=metadata.has_venv,
-            status=metadata.status,
-            deps_synced_at=deps_synced_at or metadata.deps_synced_at,
-            last_activity_at=last_activity_at or metadata.last_activity_at,
-        )
-
-        save_workspace_metadata(updated, metadata_path)
 
     def _ensure_git_exclude_entry(self, repo_root: Path, entry: str) -> None:
         """Ensure an entry exists in the repository's git exclude file.

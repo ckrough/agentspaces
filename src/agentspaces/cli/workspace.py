@@ -9,13 +9,11 @@ from typing import Annotated
 
 import typer
 
-from agentspaces.cli.agent import _resolve_plan_mode
 from agentspaces.cli.formatters import (
     print_did_you_mean,
     print_error,
     print_info,
     print_next_steps,
-    print_success,
     print_warning,
     print_workspace_created,
     print_workspace_removed,
@@ -24,11 +22,6 @@ from agentspaces.cli.formatters import (
 )
 from agentspaces.infrastructure import git
 from agentspaces.infrastructure.similarity import find_similar_names
-from agentspaces.modules.agent.launcher import (
-    AgentError,
-    AgentLauncher,
-    AgentNotFoundError,
-)
 from agentspaces.modules.workspace.service import (
     WorkspaceError,
     WorkspaceNotFoundError,
@@ -69,26 +62,6 @@ def create(
         bool,
         typer.Option("--no-venv", help="Skip virtual environment creation"),
     ] = False,
-    launch: Annotated[
-        bool,
-        typer.Option(
-            "--launch", "-l", help="Launch Claude Code in workspace after creation"
-        ),
-    ] = False,
-    plan_mode: Annotated[
-        bool,
-        typer.Option(
-            "--plan-mode",
-            help="Enable plan mode when launching (requires --launch)",
-        ),
-    ] = False,
-    no_plan_mode: Annotated[
-        bool,
-        typer.Option(
-            "--no-plan-mode",
-            help="Disable plan mode when launching (requires --launch)",
-        ),
-    ] = False,
 ) -> None:
     """Create a new isolated workspace from a branch.
 
@@ -105,17 +78,7 @@ def create(
         agentspaces workspace create -p "Fix auth bug"   # With purpose
         agentspaces workspace create --no-venv            # Skip venv setup
         agentspaces workspace create feature/auth --attach  # Attach to existing branch
-        agentspaces workspace create --launch             # Create and launch agent
     """
-    # Validate plan mode flags require --launch
-    if (plan_mode or no_plan_mode) and not launch:
-        print_error("--plan-mode and --no-plan-mode require --launch")
-        raise typer.Exit(1)
-
-    if plan_mode and no_plan_mode:
-        print_error("Cannot use both --plan-mode and --no-plan-mode")
-        raise typer.Exit(1)
-
     try:
         if attach:
             workspace = _service.create(
@@ -146,61 +109,11 @@ def create(
         has_venv=workspace.has_venv,
     )
 
-    # If --launch flag is set, launch agent; otherwise show next steps
-    if launch:
-        _launch_agent_in_workspace(
-            workspace.name,
-            workspace.path,
-            plan_mode=plan_mode,
-            no_plan_mode=no_plan_mode,
-        )
-    else:
-        print_next_steps(
-            workspace_name=workspace.name,
-            workspace_path=str(workspace.path),
-            has_venv=workspace.has_venv,
-        )
-
-
-def _launch_agent_in_workspace(
-    workspace_name: str,
-    workspace_path: Path,
-    plan_mode: bool = False,
-    no_plan_mode: bool = False,
-) -> None:
-    """Launch Claude Code agent in a newly created workspace.
-
-    Args:
-        workspace_name: Name of the workspace.
-        workspace_path: Path to the workspace directory.
-        plan_mode: Enable plan mode explicitly.
-        no_plan_mode: Disable plan mode explicitly.
-    """
-    # Determine plan mode setting: CLI flag > config > default
-    effective_plan_mode = _resolve_plan_mode(plan_mode, no_plan_mode)
-
-    print_info(f"Launching Claude Code in '{workspace_name}'...")
-
-    launcher = AgentLauncher()
-    try:
-        result = launcher.launch_claude(
-            workspace_name,
-            plan_mode=effective_plan_mode,
-            cwd=workspace_path,
-        )
-
-        if result.exit_code == 0:
-            print_success(f"Claude Code session ended in '{workspace_name}'")
-        else:
-            print_warning(f"Claude Code exited with code {result.exit_code}")
-
-    except AgentNotFoundError as e:
-        print_error(str(e))
-        print_info("Visit https://claude.ai/download to install Claude Code")
-        raise typer.Exit(1) from e
-    except AgentError as e:
-        print_error(str(e))
-        raise typer.Exit(1) from e
+    print_next_steps(
+        workspace_name=workspace.name,
+        workspace_path=str(workspace.path),
+        has_venv=workspace.has_venv,
+    )
 
 
 @app.command("list")
@@ -302,14 +215,7 @@ def remove(
         _service.remove(name, force=force)
     except WorkspaceNotFoundError:
         print_error(f"Workspace not found: {name}")
-        # Try to suggest similar workspace names
-        try:
-            workspaces = _service.list()
-            suggestions = find_similar_names(name, [ws.name for ws in workspaces])
-            print_did_you_mean(suggestions)
-        except WorkspaceError:
-            pass  # Don't fail on suggestion lookup
-        print_info("Use 'agentspaces workspace list' to see available workspaces")
+        _suggest_similar_workspaces(name)
         raise typer.Exit(1) from None
     except WorkspaceError as e:
         print_error(str(e))
@@ -332,9 +238,9 @@ def _suggest_similar_workspaces(name: str) -> None:
 @app.command("status")
 def status(
     name: Annotated[
-        str | None,
-        typer.Argument(help="Workspace name (uses active if not specified)"),
-    ] = None,
+        str,
+        typer.Argument(help="Workspace name"),
+    ],
 ) -> None:
     """Show detailed workspace status.
 
@@ -343,20 +249,8 @@ def status(
 
     \b
     Examples:
-        agentspaces workspace status                    # Status of active workspace
         agentspaces workspace status eager-turing       # Status of specific workspace
     """
-    # Determine which workspace to show
-    if name is None:
-        active = _service.get_active()
-        if active is None:
-            print_error("No workspace specified and no active workspace set.")
-            print_info(
-                "Use 'agentspaces workspace status <name>' or 'agentspaces workspace activate <name>'"
-            )
-            raise typer.Exit(1)
-        name = active.name
-
     try:
         workspace = _service.get(name)
     except WorkspaceNotFoundError:
@@ -367,105 +261,9 @@ def status(
         print_error(str(e))
         raise typer.Exit(1) from e
 
-    # Check if this is the active workspace
-    is_active = False
-    try:
-        active = _service.get_active()
-        is_active = active is not None and active.name == name
-    except WorkspaceError:
-        pass
-
     # Check git status
     is_dirty = False
     with contextlib.suppress(git.GitError):
         is_dirty = git.is_dirty(workspace.path)
 
-    print_workspace_status(workspace, is_dirty=is_dirty, is_active=is_active)
-
-
-@app.command("activate")
-def activate(
-    name: Annotated[
-        str,
-        typer.Argument(help="Workspace name to set as active"),
-    ],
-) -> None:
-    """Set a workspace as the active workspace.
-
-    The active workspace is used as the default for commands like
-    'agentspaces agent launch' when no workspace is specified.
-
-    \b
-    Examples:
-        agentspaces workspace activate eager-turing     # Set as active
-        agentspaces workspace current                   # Show current active
-    """
-    try:
-        _service.set_active(name)
-    except WorkspaceNotFoundError:
-        print_error(f"Workspace not found: {name}")
-        _suggest_similar_workspaces(name)
-        raise typer.Exit(1) from None
-    except WorkspaceError as e:
-        print_error(str(e))
-        raise typer.Exit(1) from e
-
-    print_success(f"Active workspace set to: {name}")
-
-
-@app.command("current")
-def current() -> None:
-    """Show the currently active workspace.
-
-    The active workspace is used as the default for commands like
-    'agentspaces agent launch' when no workspace is specified.
-
-    \b
-    Examples:
-        agentspaces workspace current                   # Show active workspace
-        agentspaces workspace activate eager-turing     # Set active workspace
-    """
-    try:
-        active = _service.get_active()
-    except WorkspaceError as e:
-        print_error(str(e))
-        raise typer.Exit(1) from e
-
-    if active is None:
-        print_info("No active workspace set.")
-        print_info("Use 'agentspaces workspace activate <name>' to set one.")
-        raise typer.Exit(0)
-
-    print_info(f"Active workspace: [cyan]{active.name}[/cyan]")
-    print_info(f"Path: {active.path}")
-
-
-@app.command("sync")
-def sync(
-    name: Annotated[
-        str | None,
-        typer.Argument(help="Workspace name (uses active if not specified)"),
-    ] = None,
-) -> None:
-    """Sync workspace dependencies with uv sync.
-
-    Runs 'uv sync --all-extras' in the workspace to install or update
-    dependencies from pyproject.toml.
-
-    \b
-    Examples:
-        agentspaces workspace sync                      # Sync active workspace
-        agentspaces workspace sync eager-turing         # Sync specific workspace
-    """
-    try:
-        workspace = _service.sync_deps(name)
-    except WorkspaceNotFoundError as e:
-        print_error(f"Workspace not found: {e}")
-        if name:
-            _suggest_similar_workspaces(name)
-        raise typer.Exit(1) from None
-    except WorkspaceError as e:
-        print_error(str(e))
-        raise typer.Exit(1) from e
-
-    print_success(f"Dependencies synced for: {workspace.name}")
+    print_workspace_status(workspace, is_dirty=is_dirty)

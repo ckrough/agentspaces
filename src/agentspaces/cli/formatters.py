@@ -9,8 +9,6 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from agentspaces.cli.context import CLIContext
-
 if TYPE_CHECKING:
     from agentspaces.modules.workspace.service import WorkspaceInfo
 
@@ -22,7 +20,6 @@ __all__ = [
     "print_error",
     "print_info",
     "print_next_steps",
-    "print_quick_start",
     "print_success",
     "print_warning",
     "print_workspace_created",
@@ -52,12 +49,8 @@ def print_warning(message: str) -> None:
 
 
 def print_info(message: str) -> None:
-    """Print an info message.
-
-    Suppressed when --quiet flag is set.
-    """
-    if not CLIContext.get().quiet:
-        console.print(f"[blue]i[/blue] {message}")
+    """Print an info message."""
+    console.print(f"[blue]i[/blue] {message}")
 
 
 def print_did_you_mean(suggestions: list[str]) -> None:
@@ -107,25 +100,15 @@ def print_workspace_created(
 def print_next_steps(workspace_name: str, workspace_path: str, has_venv: bool) -> None:
     """Print actionable next steps after workspace creation.
 
-    Suppressed when --quiet flag is set.
-
     Args:
         workspace_name: Name of the created workspace.
         workspace_path: Path to the workspace directory.
         has_venv: Whether a virtual environment was created.
     """
-    if CLIContext.get().quiet:
-        return
-
     steps = [f"cd {workspace_path}"]
     if has_venv:
         steps.append("source .venv/bin/activate")
-    steps.extend(
-        [
-            "agentspaces agent launch",
-            f"agentspaces workspace remove {workspace_name}",
-        ]
-    )
+    steps.append(f"agentspaces workspace remove {workspace_name}")
 
     lines = [f"  {i + 1}. [cyan]{step}[/cyan]" for i, step in enumerate(steps)]
     panel = Panel(
@@ -134,34 +117,6 @@ def print_next_steps(workspace_name: str, workspace_path: str, has_venv: bool) -
         border_style="blue",
     )
     console.print(panel)
-
-    # Print copyable one-liner for quick start
-    print_quick_start(workspace_path, has_venv)
-
-
-def print_quick_start(workspace_path: str, has_venv: bool) -> None:
-    """Print a copyable one-liner command for quick workspace launch.
-
-    Suppressed when --quiet flag is set.
-
-    Args:
-        workspace_path: Path to the workspace directory.
-        has_venv: Whether a virtual environment was created.
-    """
-    if CLIContext.get().quiet:
-        return
-
-    # Build the one-liner command
-    parts = [f"cd {workspace_path}"]
-    if has_venv:
-        parts.append("source .venv/bin/activate")
-    parts.append("agentspaces agent launch")
-
-    one_liner = " && ".join(parts)
-
-    console.print()
-    console.print("[dim]Quick start (copy & paste):[/dim]")
-    console.print(f"  [bold cyan]{one_liner}[/bold cyan]")
 
 
 def format_relative_time(dt: datetime | None) -> str:
@@ -247,27 +202,15 @@ def print_workspace_status(
     workspace: WorkspaceInfo,
     *,
     is_dirty: bool = False,
-    is_active: bool = False,
 ) -> None:
     """Print detailed workspace status panel.
 
     Args:
         workspace: Workspace information.
         is_dirty: Whether the workspace has uncommitted changes.
-        is_active: Whether this is the active workspace.
     """
     # Status badge
-    status_parts = []
-    if is_active:
-        status_parts.append("[green]● active[/green]")
-    else:
-        status_parts.append("[dim]○ inactive[/dim]")
-    if is_dirty:
-        status_parts.append("[yellow]● dirty[/yellow]")
-    else:
-        status_parts.append("[green]● clean[/green]")
-
-    status_line = "  ".join(status_parts)
+    status_line = "[yellow]● dirty[/yellow]" if is_dirty else "[green]● clean[/green]"
 
     lines = [
         f"[bold]Status:[/bold]    {status_line}",
@@ -291,8 +234,6 @@ def print_workspace_status(
     lines.append("")
     lines.append("[bold]Timestamps[/bold]")
     lines.append(f"  Created:  {format_relative_time(workspace.created_at)}")
-    lines.append(f"  Synced:   {format_relative_time(workspace.deps_synced_at)}")
-    lines.append(f"  Activity: {format_relative_time(workspace.last_activity_at)}")
 
     panel = Panel(
         "\n".join(lines),

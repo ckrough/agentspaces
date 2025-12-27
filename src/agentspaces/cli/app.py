@@ -44,12 +44,6 @@ def main(
         "-v",
         help="Show debug output.",
     ),
-    quiet: bool = typer.Option(  # noqa: ARG001 - reserved for future use
-        False,
-        "--quiet",
-        "-q",
-        help="Suppress info messages.",
-    ),
 ) -> None:
     """agentspaces: Workspace orchestration for AI coding agents.
 

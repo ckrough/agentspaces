@@ -48,8 +48,6 @@ class TestWorkspaceMetadata:
         assert metadata.python_version is None
         assert metadata.has_venv is False
         assert metadata.status == "active"
-        assert metadata.deps_synced_at is None
-        assert metadata.last_activity_at is None
 
     def test_metadata_all_fields(self) -> None:
         """Should store all provided fields."""
@@ -112,7 +110,7 @@ class TestSaveWorkspaceMetadata:
 
         data = json.loads(path.read_text(encoding="utf-8"))
         assert "version" in data
-        assert data["version"] == "2"  # Schema version 2 with timestamp fields
+        assert data["version"] == "3"  # Schema version 3
 
     def test_save_creates_parent_directories(self, temp_dir: Path) -> None:
         """Should create parent directories if needed."""
@@ -243,86 +241,32 @@ class TestLoadWorkspaceMetadata:
         assert loaded.name == "test-workspace"
 
 
-class TestMetadataTimestampFields:
-    """Tests for new timestamp fields in WorkspaceMetadata."""
+class TestMetadataLegacyFields:
+    """Tests for backwards compatibility with legacy fields."""
 
-    def test_deps_synced_at_stored(self, temp_dir: Path) -> None:
-        """Should store and load deps_synced_at timestamp."""
-        synced_at = datetime(2025, 12, 20, 12, 0, 0, tzinfo=UTC)
-        metadata = WorkspaceMetadata(
-            name="test-workspace",
-            project="test-project",
-            branch="test-workspace",
-            base_branch="main",
-            created_at=datetime.now(UTC),
-            deps_synced_at=synced_at,
-        )
+    def test_loads_v2_metadata_with_legacy_fields(self, temp_dir: Path) -> None:
+        """Should gracefully load v2 metadata that has legacy timestamp fields."""
+        import json
+
         path = temp_dir / "workspace.json"
+        # Simulate a v2 file with legacy fields
+        data = {
+            "version": "2",
+            "name": "test-workspace",
+            "project": "test-project",
+            "branch": "test-workspace",
+            "base_branch": "main",
+            "created_at": datetime.now(UTC).isoformat(),
+            "deps_synced_at": datetime.now(UTC).isoformat(),  # Legacy field
+            "last_activity_at": datetime.now(UTC).isoformat(),  # Legacy field
+        }
+        path.write_text(json.dumps(data), encoding="utf-8")
 
-        save_workspace_metadata(metadata, path)
         loaded = load_workspace_metadata(path)
 
+        # Should load successfully, ignoring legacy fields
         assert loaded is not None
-        assert loaded.deps_synced_at == synced_at
-
-    def test_last_activity_at_stored(self, temp_dir: Path) -> None:
-        """Should store and load last_activity_at timestamp."""
-        activity_at = datetime(2025, 12, 20, 14, 30, 0, tzinfo=UTC)
-        metadata = WorkspaceMetadata(
-            name="test-workspace",
-            project="test-project",
-            branch="test-workspace",
-            base_branch="main",
-            created_at=datetime.now(UTC),
-            last_activity_at=activity_at,
-        )
-        path = temp_dir / "workspace.json"
-
-        save_workspace_metadata(metadata, path)
-        loaded = load_workspace_metadata(path)
-
-        assert loaded is not None
-        assert loaded.last_activity_at == activity_at
-
-    def test_both_timestamps_stored(self, temp_dir: Path) -> None:
-        """Should store and load both timestamps together."""
-        synced_at = datetime(2025, 12, 20, 12, 0, 0, tzinfo=UTC)
-        activity_at = datetime(2025, 12, 20, 14, 30, 0, tzinfo=UTC)
-        metadata = WorkspaceMetadata(
-            name="test-workspace",
-            project="test-project",
-            branch="test-workspace",
-            base_branch="main",
-            created_at=datetime.now(UTC),
-            deps_synced_at=synced_at,
-            last_activity_at=activity_at,
-        )
-        path = temp_dir / "workspace.json"
-
-        save_workspace_metadata(metadata, path)
-        loaded = load_workspace_metadata(path)
-
-        assert loaded is not None
-        assert loaded.deps_synced_at == synced_at
-        assert loaded.last_activity_at == activity_at
-
-    def test_none_timestamps_remain_none(self, temp_dir: Path) -> None:
-        """None timestamps should remain None after round-trip."""
-        metadata = WorkspaceMetadata(
-            name="test-workspace",
-            project="test-project",
-            branch="test-workspace",
-            base_branch="main",
-            created_at=datetime.now(UTC),
-        )
-        path = temp_dir / "workspace.json"
-
-        save_workspace_metadata(metadata, path)
-        loaded = load_workspace_metadata(path)
-
-        assert loaded is not None
-        assert loaded.deps_synced_at is None
-        assert loaded.last_activity_at is None
+        assert loaded.name == "test-workspace"
 
 
 class TestMetadataError:

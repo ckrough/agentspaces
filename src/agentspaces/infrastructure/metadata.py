@@ -26,8 +26,9 @@ logger = structlog.get_logger()
 
 # Current schema version - increment when making breaking changes
 # v1: Initial schema
-# v2: Added deps_synced_at and last_activity_at fields
-SCHEMA_VERSION = "2"
+# v2: Added deps_synced_at and last_activity_at fields (removed in v3)
+# v3: Removed unused timestamp fields (deps_synced_at, last_activity_at)
+SCHEMA_VERSION = "3"
 
 # Maximum metadata file size (1MB - generous for workspace metadata)
 MAX_METADATA_SIZE = 1 * 1024 * 1024
@@ -51,8 +52,6 @@ class WorkspaceMetadata:
         python_version: Python version used for venv.
         has_venv: Whether a virtual environment was created.
         status: Workspace status (active, archived).
-        deps_synced_at: Timestamp when dependencies were last synced.
-        last_activity_at: Timestamp of last agent launch or sync.
     """
 
     name: str
@@ -64,8 +63,6 @@ class WorkspaceMetadata:
     python_version: str | None = None
     has_venv: bool = False
     status: str = "active"
-    deps_synced_at: datetime | None = None
-    last_activity_at: datetime | None = None
 
 
 def save_workspace_metadata(metadata: WorkspaceMetadata, path: Path) -> None:
@@ -178,9 +175,8 @@ def _metadata_to_dict(metadata: WorkspaceMetadata) -> dict[str, Any]:
     data["version"] = SCHEMA_VERSION
 
     # Convert datetime fields to ISO 8601 strings
-    for field in ("created_at", "deps_synced_at", "last_activity_at"):
-        if isinstance(data.get(field), datetime):
-            data[field] = data[field].isoformat()
+    if isinstance(data.get("created_at"), datetime):
+        data["created_at"] = data["created_at"].isoformat()
 
     return data
 
@@ -220,7 +216,7 @@ def _dict_to_metadata(data: dict[str, Any]) -> WorkspaceMetadata:
     """Convert dict to WorkspaceMetadata.
 
     Args:
-        data: Dict from JSON.
+        data: Dict from JSON (may contain legacy fields that are ignored).
 
     Returns:
         WorkspaceMetadata instance.
@@ -244,6 +240,4 @@ def _dict_to_metadata(data: dict[str, Any]) -> WorkspaceMetadata:
         python_version=data.get("python_version"),
         has_venv=data.get("has_venv", False),
         status=data.get("status", "active"),
-        deps_synced_at=_parse_datetime(data.get("deps_synced_at")),
-        last_activity_at=_parse_datetime(data.get("last_activity_at")),
     )

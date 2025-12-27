@@ -44,8 +44,6 @@ class WorkspaceInfo:
     python_version: str | None = None
     has_venv: bool = False
     status: str = "active"
-    deps_synced_at: datetime | None = None
-    last_activity_at: datetime | None = None
 
 
 class WorkspaceError(Exception):
@@ -282,8 +280,6 @@ class WorkspaceService:
                     python_version=metadata.python_version if metadata else None,
                     has_venv=metadata.has_venv if metadata else False,
                     status=metadata.status if metadata else "active",
-                    deps_synced_at=metadata.deps_synced_at if metadata else None,
-                    last_activity_at=metadata.last_activity_at if metadata else None,
                 )
             )
 
@@ -338,8 +334,6 @@ class WorkspaceService:
             if metadata
             else (workspace_path / ".venv").exists(),
             status=metadata.status if metadata else "active",
-            deps_synced_at=metadata.deps_synced_at if metadata else None,
-            last_activity_at=metadata.last_activity_at if metadata else None,
         )
 
     def remove(

@@ -1,14 +1,13 @@
 # agentspaces
 
-Workspace orchestration for AI coding agents. Manage isolated workspaces for parallel development with git worktrees, tracked context, and agent integration.
+Workspace orchestration for AI coding agents. Manage isolated workspaces for parallel development with git worktrees and tracked context.
 
 ## Features
 
 - **Parallel Development** - Work on multiple features simultaneously without branch switching
 - **Isolated Environments** - Each workspace has its own Python venv and dependencies
-- **Agent Integration** - Launch Claude Code directly into workspaces with context
 - **Project Templates** - Generate documentation optimized for AI agents (CLAUDE.md, TODO.md, ADRs)
-- **Workspace Tracking** - Purpose, metadata, and activity tracking per workspace
+- **Workspace Tracking** - Purpose, metadata, and timestamps per workspace
 
 ## Quick Start
 
@@ -35,13 +34,6 @@ agentspaces workspace create main --purpose "Add user authentication"
 # Created: eager-turing at ~/.agentspaces/my-app/eager-turing
 ```
 
-### Launch an Agent
-
-```bash
-agentspaces agent launch eager-turing --use-purpose
-# Launches Claude Code with prompt: "Add user authentication"
-```
-
 ## Usage
 
 ### Workspace Commands
@@ -49,17 +41,8 @@ agentspaces agent launch eager-turing --use-purpose
 ```bash
 agentspaces workspace create [branch]    # Create from branch (default: HEAD)
 agentspaces workspace list               # List all workspaces
-agentspaces workspace status [name]      # Show detailed status
-agentspaces workspace activate <name>    # Set as active workspace
-agentspaces workspace sync [name]        # Sync dependencies
+agentspaces workspace status <name>      # Show detailed status
 agentspaces workspace remove <name>      # Remove workspace
-```
-
-### Agent Commands
-
-```bash
-agentspaces agent launch [workspace]     # Launch Claude Code
-agentspaces agent launch --use-purpose   # Use workspace purpose as prompt
 ```
 
 ### Documentation Templates
@@ -78,9 +61,8 @@ Workspaces are stored at `~/.agentspaces/<project>/<workspace>/`:
 
 ```
 ~/.agentspaces/my-app/eager-turing/
-├── .agentspace/           # Metadata and skills
-│   ├── workspace.json
-│   └── skills/
+├── .agentspace/           # Metadata
+│   └── workspace.json
 ├── .venv/                 # Isolated Python environment
 └── <project files>        # Git worktree
 ```
@@ -88,12 +70,12 @@ Workspaces are stored at `~/.agentspaces/<project>/<workspace>/`:
 ## Architecture
 
 ```
-[CLI] → [Service] → [Git Worktree] → [Python Env] → [Agent Launch]
+[CLI] → [Service] → [Git Worktree] → [Python Env]
 ```
 
 - **CLI Layer** - Typer commands with Rich output
 - **Service Layer** - WorkspaceService orchestration
-- **Infrastructure** - Git, uv, and Claude subprocess wrappers
+- **Infrastructure** - Git and uv subprocess wrappers
 
 See [docs/design/architecture.md](docs/design/architecture.md) for detailed system design.
 

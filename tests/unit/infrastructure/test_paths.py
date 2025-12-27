@@ -148,48 +148,6 @@ class TestPathResolver:
         )
         assert path == expected
 
-    def test_skills_dir(self, resolver: PathResolver) -> None:
-        """skills_dir should return skills directory path."""
-        path = resolver.skills_dir("my-project", "eager-turing")
-        expected = (
-            resolver.base / "my-project" / "eager-turing" / ".agentspace" / "skills"
-        )
-        assert path == expected
-
-    def test_workspace_context_skill(self, resolver: PathResolver) -> None:
-        """workspace_context_skill should return skill directory path."""
-        path = resolver.workspace_context_skill("my-project", "eager-turing")
-        expected = (
-            resolver.base
-            / "my-project"
-            / "eager-turing"
-            / ".agentspace"
-            / "skills"
-            / "workspace-context"
-        )
-        assert path == expected
-
-    def test_sessions_dir(self, resolver: PathResolver) -> None:
-        """sessions_dir should return sessions directory path."""
-        path = resolver.sessions_dir("my-project", "eager-turing")
-        expected = (
-            resolver.base / "my-project" / "eager-turing" / ".agentspace" / "sessions"
-        )
-        assert path == expected
-
-    def test_session_dir(self, resolver: PathResolver) -> None:
-        """session_dir should return specific session directory."""
-        path = resolver.session_dir("my-project", "eager-turing", "abc123")
-        expected = (
-            resolver.base
-            / "my-project"
-            / "eager-turing"
-            / ".agentspace"
-            / "sessions"
-            / "abc123"
-        )
-        assert path == expected
-
     def test_venv_dir(self, resolver: PathResolver) -> None:
         """venv_dir should return .venv directory path."""
         path = resolver.venv_dir("my-project", "eager-turing")
@@ -258,8 +216,3 @@ class TestPathResolver:
         """workspace_dir should reject invalid workspace names."""
         with pytest.raises(InvalidNameError):
             resolver.workspace_dir("valid-project", "../escape")
-
-    def test_session_dir_validates_session_id(self, resolver: PathResolver) -> None:
-        """session_dir should reject invalid session IDs."""
-        with pytest.raises(InvalidNameError):
-            resolver.session_dir("valid-project", "valid-workspace", "../escape")

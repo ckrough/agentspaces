@@ -5,8 +5,7 @@ from __future__ import annotations
 import typer
 
 from agentspaces import __version__
-from agentspaces.cli import agent, docs, workspace
-from agentspaces.cli.context import CLIContext
+from agentspaces.cli import docs, workspace
 from agentspaces.infrastructure.logging import configure_logging
 
 # Main application
@@ -18,7 +17,6 @@ app = typer.Typer(
 )
 
 # Register subcommand groups
-app.add_typer(agent.app, name="agent")
 app.add_typer(docs.app, name="docs")
 app.add_typer(workspace.app, name="workspace")
 
@@ -46,7 +44,7 @@ def main(
         "-v",
         help="Show debug output.",
     ),
-    quiet: bool = typer.Option(
+    quiet: bool = typer.Option(  # noqa: ARG001 - reserved for future use
         False,
         "--quiet",
         "-q",
@@ -55,22 +53,7 @@ def main(
 ) -> None:
     """agentspaces: Workspace orchestration for AI coding agents.
 
-    Create isolated workspaces, launch agents with context, and orchestrate
-    multi-step workflows.
+    Create isolated workspaces for development tasks.
     """
-    # Validate mutually exclusive flags
-    if verbose and quiet:
-        import sys
-
-        from agentspaces.cli.formatters import print_error
-
-        print_error("Cannot use both --verbose and --quiet")
-        sys.exit(1)
-
-    # Set up CLI context for verbosity control
-    ctx = CLIContext.get()
-    ctx.verbose = verbose
-    ctx.quiet = quiet
-
     # Configure logging (debug only when verbose)
     configure_logging(debug=verbose)

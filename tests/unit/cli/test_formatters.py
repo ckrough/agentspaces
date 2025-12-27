@@ -7,7 +7,6 @@ from unittest.mock import MagicMock, patch
 
 from rich.panel import Panel
 
-from agentspaces.cli.context import CLIContext
 from agentspaces.cli.formatters import (
     print_did_you_mean,
     print_info,
@@ -43,41 +42,17 @@ def _find_next_steps_panel(mock_console: MagicMock) -> Any:
 class TestPrintInfo:
     """Tests for print_info function."""
 
-    def setup_method(self) -> None:
-        """Reset context before each test."""
-        CLIContext.reset()
-
-    def teardown_method(self) -> None:
-        """Reset context after each test."""
-        CLIContext.reset()
-
-    def test_prints_message_normally(self) -> None:
-        """Should print message when not in quiet mode."""
+    def test_prints_message(self) -> None:
+        """Should print message."""
         with patch("agentspaces.cli.formatters.console") as mock_console:
             print_info("Test message")
             mock_console.print.assert_called_once()
             call_args = mock_console.print.call_args[0][0]
             assert "Test message" in call_args
 
-    def test_suppressed_in_quiet_mode(self) -> None:
-        """Should not print when quiet mode is enabled."""
-        CLIContext.get().quiet = True
-
-        with patch("agentspaces.cli.formatters.console") as mock_console:
-            print_info("Test message")
-            mock_console.print.assert_not_called()
-
 
 class TestPrintNextSteps:
     """Tests for print_next_steps function."""
-
-    def setup_method(self) -> None:
-        """Reset context before each test."""
-        CLIContext.reset()
-
-    def teardown_method(self) -> None:
-        """Reset context after each test."""
-        CLIContext.reset()
 
     def test_prints_cd_step(self) -> None:
         """Should include cd to workspace path."""
@@ -103,39 +78,12 @@ class TestPrintNextSteps:
             panel = _find_next_steps_panel(mock_console)
             assert "source .venv/bin/activate" not in panel.renderable
 
-    def test_includes_agent_launch(self) -> None:
-        """Should include agentspaces agent launch step."""
-        with patch("agentspaces.cli.formatters.console") as mock_console:
-            print_next_steps("test-ws", "/path/to/workspace", has_venv=False)
-            panel = _find_next_steps_panel(mock_console)
-            assert "agentspaces agent launch" in panel.renderable
-
     def test_includes_remove_step(self) -> None:
         """Should include workspace remove step with workspace name."""
         with patch("agentspaces.cli.formatters.console") as mock_console:
             print_next_steps("test-ws", "/path/to/workspace", has_venv=False)
             panel = _find_next_steps_panel(mock_console)
             assert "agentspaces workspace remove test-ws" in panel.renderable
-
-    def test_prints_quick_start_one_liner(self) -> None:
-        """Should print a quick start one-liner after the panel."""
-        with patch("agentspaces.cli.formatters.console") as mock_console:
-            print_next_steps("test-ws", "/path/to/workspace", has_venv=True)
-            # Check all print calls for the one-liner
-            calls = [str(c) for c in mock_console.print.call_args_list]
-            content = " ".join(calls)
-            assert "Quick start" in content
-            assert "/path/to/workspace" in content
-            assert "source .venv/bin/activate" in content
-            assert "agentspaces agent launch" in content
-
-    def test_suppressed_in_quiet_mode(self) -> None:
-        """Should not print when quiet mode is enabled."""
-        CLIContext.get().quiet = True
-
-        with patch("agentspaces.cli.formatters.console") as mock_console:
-            print_next_steps("test-ws", "/path/to/workspace", has_venv=True)
-            mock_console.print.assert_not_called()
 
 
 class TestPrintDidYouMean:

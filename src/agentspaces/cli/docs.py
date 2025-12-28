@@ -372,8 +372,8 @@ def _get_templates_for_groups(
     Returns:
         Filtered mapping of template names to output paths.
     """
-    # Default: include all groups except root for existing projects
-    included_groups = {"claude", "docs", "adr"} if include is None else set(include)
+    # Default: include all groups
+    included_groups = set(ALL_GROUPS) if include is None else set(include)
 
     # Apply exclusions
     if exclude:
@@ -438,7 +438,6 @@ def render(
 
     Unlike 'scaffold', this command is designed for existing projects:
     - Defaults to current directory
-    - Excludes root files (README.md, CLAUDE.md, TODO.md) by default
     - Auto-detects project name from directory or pyproject.toml
     - Skips existing files (use --force to overwrite)
 

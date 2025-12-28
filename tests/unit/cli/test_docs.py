@@ -24,16 +24,10 @@ runner = CliRunner()
 class TestGetTemplatesForGroups:
     """Tests for _get_templates_for_groups helper function."""
 
-    def test_default_excludes_root_templates(self) -> None:
-        """Default behavior should exclude root templates."""
+    def test_default_includes_all_templates(self) -> None:
+        """Default behavior should include all template groups."""
         templates = _get_templates_for_groups(include=None, exclude=None)
-        root_templates = set(TEMPLATE_GROUPS["root"])
-        assert not any(t in templates for t in root_templates)
-
-    def test_default_includes_claude_docs_adr(self) -> None:
-        """Default behavior should include claude, docs, and adr groups."""
-        templates = _get_templates_for_groups(include=None, exclude=None)
-        for group in ["claude", "docs", "adr"]:
+        for group in ALL_GROUPS:
             for template_name in TEMPLATE_GROUPS[group]:
                 assert template_name in templates
 
@@ -53,7 +47,7 @@ class TestGetTemplatesForGroups:
         for template_name in TEMPLATE_GROUPS["adr"]:
             assert template_name not in templates
         # Other groups should still be included
-        for group in ["claude", "docs"]:
+        for group in ["root", "claude", "docs"]:
             for template_name in TEMPLATE_GROUPS[group]:
                 assert template_name in templates
 
@@ -71,7 +65,7 @@ class TestGetTemplatesForGroups:
     def test_empty_result_when_all_excluded(self) -> None:
         """Should return empty dict when all groups excluded."""
         templates = _get_templates_for_groups(
-            include=None, exclude=["claude", "docs", "adr"]
+            include=None, exclude=["root", "claude", "docs", "adr"]
         )
         assert templates == {}
 
@@ -105,8 +99,8 @@ class TestDetectProjectName:
 class TestRenderCommand:
     """Tests for the render command."""
 
-    def test_renders_default_templates_to_directory(self, temp_dir: Path) -> None:
-        """Should render default templates (claude, docs, adr) to directory."""
+    def test_renders_all_templates_to_directory(self, temp_dir: Path) -> None:
+        """Should render all templates including root files to directory."""
         result = runner.invoke(
             app,
             [
@@ -119,14 +113,15 @@ class TestRenderCommand:
             ],
         )
         assert result.exit_code == 0
-        # Check that docs files were created
+        # Check that all files were created
         assert (temp_dir / "docs/design/architecture.md").exists()
         assert (temp_dir / "docs/design/development-standards.md").exists()
         assert (temp_dir / ".claude/agents/README.md").exists()
         assert (temp_dir / "docs/adr/000-template.md").exists()
-        # Root files should NOT be created by default
-        assert not (temp_dir / "README.md").exists()
-        assert not (temp_dir / "CLAUDE.md").exists()
+        # Root files should also be created
+        assert (temp_dir / "README.md").exists()
+        assert (temp_dir / "CLAUDE.md").exists()
+        assert (temp_dir / "TODO.md").exists()
 
     def test_skips_existing_files(self, temp_dir: Path) -> None:
         """Should skip existing files without --force."""

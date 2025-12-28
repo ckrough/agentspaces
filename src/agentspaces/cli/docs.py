@@ -271,6 +271,17 @@ SCAFFOLD_STRUCTURE: dict[str, str] = {
     "adr-example": "docs/adr/001-example.md",
 }
 
+# Template groups for selective rendering
+TEMPLATE_GROUPS: dict[str, list[str]] = {
+    "root": ["readme", "claude-md", "todo-md"],
+    "claude": ["agents-readme", "commands-readme"],
+    "docs": ["architecture", "development-standards", "deployment"],
+    "adr": ["adr-template", "adr-example"],
+}
+
+# All group names for validation
+ALL_GROUPS: list[str] = list(TEMPLATE_GROUPS.keys())
+
 
 @app.command("scaffold")
 def scaffold(
@@ -347,3 +358,250 @@ def scaffold(
             rel = path.relative_to(target)
             console.print(f"  [dim]•[/dim] {rel}")
         console.print("[dim]Use --force to overwrite[/dim]")
+
+
+def _get_templates_for_groups(
+    include: list[str] | None, exclude: list[str] | None
+) -> dict[str, str]:
+    """Get filtered templates based on include/exclude groups.
+
+    Args:
+        include: Groups to include (None means all except root by default).
+        exclude: Groups to exclude.
+
+    Returns:
+        Filtered mapping of template names to output paths.
+    """
+    # Default: include all groups
+    included_groups = set(ALL_GROUPS) if include is None else set(include)
+
+    # Apply exclusions
+    if exclude:
+        included_groups -= set(exclude)
+
+    # Build template list from selected groups
+    selected_templates: set[str] = set()
+    for group in included_groups:
+        if group in TEMPLATE_GROUPS:
+            selected_templates.update(TEMPLATE_GROUPS[group])
+
+    # Filter SCAFFOLD_STRUCTURE to selected templates
+    return {
+        name: path
+        for name, path in SCAFFOLD_STRUCTURE.items()
+        if name in selected_templates
+    }
+
+
+@app.command("render")
+def render(
+    target: Annotated[
+        Path | None,
+        typer.Argument(help="Target directory (default: current directory)"),
+    ] = None,
+    project_name: Annotated[
+        str | None,
+        typer.Option(
+            "--project-name", "-n", help="Project name (auto-detected if not provided)"
+        ),
+    ] = None,
+    project_description: Annotated[
+        str | None,
+        typer.Option("--project-description", "-d", help="Project description"),
+    ] = None,
+    include: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--include",
+            "-i",
+            help="Template groups to include (root, claude, docs, adr)",
+        ),
+    ] = None,
+    exclude: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--exclude",
+            "-e",
+            help="Template groups to exclude",
+        ),
+    ] = None,
+    force: Annotated[
+        bool,
+        typer.Option("--force", "-f", help="Overwrite existing files"),
+    ] = False,
+    dry_run: Annotated[
+        bool,
+        typer.Option("--dry-run", help="Show what would be created without writing"),
+    ] = False,
+) -> None:
+    """Render documentation templates into an existing project.
+
+    Unlike 'scaffold', this command is designed for existing projects:
+    - Defaults to current directory
+    - Auto-detects project name from directory or pyproject.toml
+    - Skips existing files (use --force to overwrite)
+
+    Template groups:
+    - root: README.md, CLAUDE.md, TODO.md
+    - claude: .claude/agents/, .claude/commands/
+    - docs: docs/design/ (architecture, development-standards), docs/planning/
+    - adr: docs/adr/ (ADR templates)
+
+    \b
+    Examples:
+        agentspaces docs render                    # Render docs to current directory
+        agentspaces docs render -i root -i docs   # Include root and docs only
+        agentspaces docs render -e adr            # Exclude ADR templates
+        agentspaces docs render --dry-run         # Preview without writing
+        agentspaces docs render ./my-project -n "MyApp"
+    """
+    # Resolve target directory
+    target_dir = (target or Path.cwd()).resolve()
+
+    if not target_dir.exists():
+        error_console.print(f"[red]✗[/red] Directory does not exist: {target_dir}")
+        raise typer.Exit(1)
+
+    if not target_dir.is_dir():
+        error_console.print(f"[red]✗[/red] Not a directory: {target_dir}")
+        raise typer.Exit(1)
+
+    # Validate group names
+    all_groups = set(ALL_GROUPS)
+    if include:
+        invalid = set(include) - all_groups
+        if invalid:
+            error_console.print(
+                f"[red]✗[/red] Invalid groups: {', '.join(invalid)}. "
+                f"Available: {', '.join(ALL_GROUPS)}"
+            )
+            raise typer.Exit(1)
+
+    if exclude:
+        invalid = set(exclude) - all_groups
+        if invalid:
+            error_console.print(
+                f"[red]✗[/red] Invalid groups: {', '.join(invalid)}. "
+                f"Available: {', '.join(ALL_GROUPS)}"
+            )
+            raise typer.Exit(1)
+
+    # Auto-detect project name if not provided
+    detected_name = project_name
+    if not detected_name:
+        detected_name = _detect_project_name(target_dir)
+
+    if not detected_name:
+        error_console.print(
+            "[red]✗[/red] Could not detect project name. Please provide --project-name"
+        )
+        raise typer.Exit(1)
+
+    # Use placeholder for description if not provided
+    description = project_description or f"{detected_name} project"
+
+    # Get filtered templates
+    templates = _get_templates_for_groups(include, exclude)
+
+    if not templates:
+        console.print("[yellow]![/yellow] No templates selected after filtering")
+        raise typer.Exit(0)
+
+    # Build context
+    context: dict[str, Any] = {
+        "project_name": detected_name,
+        "project_description": description,
+        # Defaults for ADR template
+        "adr_number": "000",
+        "adr_title": "ADR Template",
+    }
+
+    # Track results
+    created: list[Path] = []
+    skipped: list[Path] = []
+    would_create: list[Path] = []
+
+    if dry_run:
+        console.print(f"[cyan]Dry run[/cyan] - previewing changes to {target_dir}\n")
+
+    for template_name, relative_path in templates.items():
+        output_path = target_dir / relative_path
+
+        if output_path.exists() and not force:
+            skipped.append(output_path)
+            continue
+
+        if dry_run:
+            would_create.append(output_path)
+            continue
+
+        # Create parent directories
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        try:
+            render_design_template(template_name, context, output_path)
+            created.append(output_path)
+        except DesignError as e:
+            error_console.print(f"[red]✗[/red] {template_name}: {e}")
+
+    # Summary
+    console.print()
+
+    if dry_run:
+        if would_create:
+            console.print(f"[cyan]Would create[/cyan] {len(would_create)} files:")
+            for path in would_create:
+                rel = path.relative_to(target_dir)
+                console.print(f"  [dim]+[/dim] {rel}")
+        if skipped:
+            console.print(
+                f"\n[yellow]Would skip[/yellow] {len(skipped)} existing files:"
+            )
+            for path in skipped:
+                rel = path.relative_to(target_dir)
+                console.print(f"  [dim]•[/dim] {rel}")
+            console.print("[dim]Use --force to overwrite[/dim]")
+        return
+
+    if created:
+        console.print(f"[green]✓[/green] Created {len(created)} files in {target_dir}")
+        for path in created:
+            rel = path.relative_to(target_dir)
+            console.print(f"  [dim]+[/dim] {rel}")
+
+    if skipped:
+        console.print(f"\n[yellow]![/yellow] Skipped {len(skipped)} existing files")
+        for path in skipped:
+            rel = path.relative_to(target_dir)
+            console.print(f"  [dim]•[/dim] {rel}")
+        console.print("[dim]Use --force to overwrite[/dim]")
+
+    if not created and not skipped:
+        console.print("[green]✓[/green] No changes needed")
+
+
+def _detect_project_name(target_dir: Path) -> str | None:
+    """Detect project name from pyproject.toml or directory name.
+
+    Args:
+        target_dir: Directory to check.
+
+    Returns:
+        Detected project name or None.
+    """
+    # Try pyproject.toml first
+    pyproject = target_dir / "pyproject.toml"
+    if pyproject.exists():
+        try:
+            import tomllib
+
+            content = pyproject.read_text(encoding="utf-8")
+            data = tomllib.loads(content)
+            name = data.get("project", {}).get("name")
+            if name:
+                return str(name)
+        except Exception:
+            pass
+
+    # Fall back to directory name
+    return target_dir.name

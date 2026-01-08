@@ -158,3 +158,33 @@ See [RELEASING.md](RELEASING.md) for full details on versioning and releases.
 - [CHANGELOG.md](CHANGELOG.md) - Project changelog (auto-generated)
 - [docs/design/architecture.md](docs/design/architecture.md) - System design
 - [docs/adr/](docs/adr/) - Architecture decisions
+
+## Issue Tracking with Beads
+
+Use [Beads](https://github.com/steveyegge/beads) for lightweight issue tracking during development sessions.
+
+```bash
+# Start session - see what's ready to work on
+bd ready --json
+
+# Create issues
+bd create "title" -t <type> -p <priority>
+# Types: feature, bug, task, chore
+# Priority: 1 (critical) to 4 (low)
+
+# Update status when starting work
+bd update <id> --status in_progress
+
+# Close when done
+bd close <id> --reason "Completed"
+
+# Track discovered work (links new issue to current work)
+bd dep add <new-id> <current-id> --type discovered-from
+
+# End session - sync changes
+bd sync
+```
+
+## Learned Patterns
+
+<!-- Add entries when Claude makes mistakes. Format: When X happens, do Y instead of Z -->

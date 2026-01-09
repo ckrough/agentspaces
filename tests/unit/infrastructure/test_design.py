@@ -29,13 +29,11 @@ class TestListDesignTemplates:
         # Docs templates
         assert "architecture" in names
         assert "development-standards" in names
-        assert "deployment" in names
         assert "adr-template" in names
         assert "adr-example" in names
         # Root templates
         assert "readme" in names
         assert "claude-md" in names
-        assert "todo-md" in names
         # .claude directory templates
         assert "agents-readme" in names
         assert "commands-readme" in names

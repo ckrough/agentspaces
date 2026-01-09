@@ -5,7 +5,7 @@ from __future__ import annotations
 import typer
 
 from agentspaces import __version__
-from agentspaces.cli import docs, workspace
+from agentspaces.cli import docs, project, workspace
 from agentspaces.infrastructure.logging import configure_logging
 
 # Main application
@@ -18,6 +18,7 @@ app = typer.Typer(
 
 # Register subcommand groups
 app.add_typer(docs.app, name="docs")
+app.add_typer(project.app, name="project")
 app.add_typer(workspace.app, name="workspace")
 
 

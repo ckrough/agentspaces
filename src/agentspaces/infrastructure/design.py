@@ -21,6 +21,7 @@ from jinja2 import Environment, FileSystemLoader, TemplateNotFound, UndefinedErr
 from agentspaces.infrastructure.frontmatter import FrontmatterError, parse_frontmatter
 from agentspaces.infrastructure.resources import (
     ResourceError,
+    get_language_templates_dir,
     get_skeleton_templates_dir,
 )
 
@@ -33,6 +34,7 @@ __all__ = [
     "get_design_template",
     "list_design_templates",
     "render_design_template",
+    "render_language_template",
 ]
 
 logger = structlog.get_logger()
@@ -280,6 +282,93 @@ def render_design_template(
 
     logger.debug(
         "design_template_rendered",
+        template=template_name,
+        output=str(output_path),
+    )
+
+    return output_path
+
+
+def render_language_template(
+    language: str,
+    template_name: str,
+    context: dict[str, Any],
+    output_path: Path,
+) -> Path:
+    """Render a language pack template with the given context.
+
+    Unlike design templates, language templates output raw content without
+    YAML frontmatter (suitable for config files like pyproject.toml).
+
+    Args:
+        language: Language pack name (e.g., "python").
+        template_name: Template name (e.g., "pyproject-toml").
+        context: Variables to pass to the template.
+        output_path: Where to write the rendered file.
+
+    Returns:
+        Path to the generated file.
+
+    Raises:
+        DesignError: If rendering fails.
+    """
+    # Validate template_name to prevent path traversal
+    if "/" in template_name or "\\" in template_name or ".." in template_name:
+        raise DesignError(f"Invalid template name: {template_name}")
+
+    # Get language templates directory
+    try:
+        lang_dir = get_language_templates_dir(language)
+    except ResourceError as e:
+        raise DesignError(str(e)) from e
+
+    # Find template file
+    template_path = lang_dir / f"{template_name}.md"
+    if not template_path.exists():
+        raise DesignError(
+            f"Template '{template_name}' not found in {language} language pack"
+        )
+
+    # Read and parse template
+    try:
+        content = template_path.read_text(encoding="utf-8")
+    except OSError as e:
+        raise DesignError(f"Cannot read template: {e}") from e
+
+    try:
+        _, body = parse_frontmatter(content)
+    except FrontmatterError as e:
+        raise DesignError(f"Invalid template frontmatter: {e}") from e
+
+    # Set up Jinja2 environment
+    env = Environment(
+        loader=FileSystemLoader(str(template_path.parent)),
+        autoescape=False,
+        trim_blocks=True,
+        lstrip_blocks=True,
+    )
+
+    # Render the body (without frontmatter in output)
+    try:
+        jinja_template = env.from_string(body)
+        rendered = jinja_template.render(**context)
+    except TemplateNotFound as e:
+        raise DesignError(f"Template include not found: {e}") from e
+    except UndefinedError as e:
+        raise DesignError(f"Undefined variable in template: {e}") from e
+    except Exception as e:
+        raise DesignError(f"Template rendering failed: {e}") from e
+
+    # Ensure output directory exists and write file
+    try:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(rendered, encoding="utf-8")
+    except OSError as e:
+        raise DesignError(f"Cannot write output file: {e}") from e
+
+    logger.debug(
+        "language_template_rendered",
+        language=language,
         template=template_name,
         output=str(output_path),
     )

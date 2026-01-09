@@ -4,9 +4,10 @@ Workspace orchestration for AI coding agents. Manage isolated workspaces for par
 
 ## Features
 
+- **Project Initialization** - Create new projects with templates, documentation, and Python tooling
 - **Parallel Development** - Work on multiple features simultaneously without branch switching
 - **Isolated Environments** - Each workspace has its own Python venv and dependencies
-- **Project Templates** - Generate documentation optimized for AI agents (CLAUDE.md, TODO.md, ADRs)
+- **Project Templates** - Generate documentation optimized for AI agents (CLAUDE.md, ADRs, architecture docs)
 - **Workspace Tracking** - Purpose, metadata, and timestamps per workspace
 
 ## Quick Start
@@ -36,6 +37,16 @@ agentspaces workspace create main --purpose "Add user authentication"
 
 ## Usage
 
+### Initialize a New Project
+
+```bash
+mkdir my-project && cd my-project
+agentspaces project create -n "My Project" -d "Description"
+
+# With Python tooling (pyproject.toml, ruff, mypy, pytest, GitHub Actions)
+agentspaces project create --python -n "My CLI" -d "A CLI tool"
+```
+
 ### Workspace Commands
 
 ```bash
@@ -53,7 +64,7 @@ agentspaces docs info <template>         # Show template details
 agentspaces docs create <template>       # Generate from template
 ```
 
-Available templates: `readme`, `claude-md`, `todo-md`, `architecture`, `development-standards`, `deployment`, `adr-template`
+Available templates: `readme`, `claude-md`, `architecture`, `development-standards`, `adr-template`
 
 ## Configuration
 

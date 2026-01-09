@@ -34,8 +34,10 @@ class TestGetSkeletonTemplatesDir:
 
         # Check for key template files
         assert (result / "CLAUDE.md").exists()
-        assert (result / "TODO.md").exists()
         assert (result / "README.md").exists()
+        # docs directory with subdirectories
+        assert (result / "docs" / "design" / "architecture.md").exists()
+        assert (result / "docs" / "adr" / "000-template.md").exists()
 
     def test_raises_error_when_skeleton_missing(self, tmp_path: Path) -> None:
         """Should raise ResourceError when skeleton directory doesn't exist."""

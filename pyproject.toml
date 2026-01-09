@@ -120,6 +120,7 @@ omit = [
     "*/__pycache__/*",
     "*/main.py",                    # CLI entry point
     "*/cli/*",                      # CLI layer (integration tested)
+    "*/ui/*",                        # TUI layer (integration tested)
     "*/infrastructure/logging.py",  # Logging config
 ]
 

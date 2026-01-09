@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from textual.containers import Container, Horizontal  # type: ignore[import-not-found]
-from textual.screen import ModalScreen  # type: ignore[import-not-found]
-from textual.widgets import (  # type: ignore[import-not-found]
+from textual.containers import Container, Horizontal
+from textual.screen import ModalScreen
+from textual.widgets import (
     Button,
     DataTable,
     Footer,
@@ -28,7 +28,7 @@ __all__ = [
 ]
 
 
-class WorkspaceTable(DataTable):
+class WorkspaceTable(DataTable[str]):
     """Interactive table showing workspaces with metadata.
 
     Displays: name, branch, purpose (truncated), venv indicator.

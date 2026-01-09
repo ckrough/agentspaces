@@ -5,10 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar
 
-import structlog  # type: ignore[import-not-found]
-from textual.app import App  # type: ignore[import-not-found]
-from textual.binding import Binding  # type: ignore[import-not-found]
-from textual.widgets import DataTable, Footer  # type: ignore[import-not-found]
+import structlog
+from textual.app import App
+from textual.binding import Binding
+from textual.widgets import DataTable, Footer
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
@@ -70,7 +70,7 @@ class WorkspacesTUI(App[None]):
     }
     """
 
-    BINDINGS: ClassVar[list[Binding]] = [
+    BINDINGS: ClassVar[list[Binding]] = [  # type: ignore[assignment]
         Binding("q", "quit", "Quit"),
         Binding("r", "refresh", "Refresh"),
         Binding("enter", "navigate", "Navigate"),
@@ -80,12 +80,16 @@ class WorkspacesTUI(App[None]):
 
     TITLE = "agentspaces"
 
-    def __init__(self) -> None:
-        """Initialize TUI with service dependencies."""
+    def __init__(self, service: WorkspaceService | None = None) -> None:
+        """Initialize TUI with service dependencies.
+
+        Args:
+            service: Workspace service instance (optional, for testing).
+        """
         super().__init__()
 
         # Dependency injection
-        self.service = WorkspaceService()
+        self.service = service or WorkspaceService()
         self.workspaces: list[WorkspaceInfo] = []
         self.main_checkout: WorkspaceInfo | None = None
         self.current_path = str(Path.cwd())
@@ -222,7 +226,6 @@ class WorkspacesTUI(App[None]):
             # Block removal of current workspace
             if str(workspace.path) == current_cwd:
                 protected.append(f"{workspace.name} (current workspace)")
-                continue
 
         if protected:
             message = "Cannot remove:\n" + "\n".join(

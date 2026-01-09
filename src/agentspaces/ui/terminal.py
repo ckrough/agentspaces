@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import os
 import shlex
-import subprocess
+import subprocess  # nosec B404 - subprocess needed for Ghostty integration
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import structlog  # type: ignore[import-not-found]
+import structlog
 from rich.console import Console
 
 if TYPE_CHECKING:
@@ -87,7 +87,7 @@ def _navigate_ghostty(command: str, workspace_name: str) -> None:
     """
     try:
         # Create new Ghostty tab with command
-        subprocess.Popen(
+        subprocess.Popen(  # nosec B603,B607
             ["ghostty", "+new-tab", command],
             start_new_session=True,
             stdout=subprocess.DEVNULL,

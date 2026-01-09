@@ -22,6 +22,7 @@ src/agentspaces/
 ├── main.py                    # CLI entry point
 ├── cli/                       # Typer commands
 │   ├── app.py                 # Main app
+│   ├── project.py             # Project initialization
 │   ├── workspace.py           # Workspace subcommands
 │   └── docs.py                # Design template commands
 ├── modules/
@@ -33,15 +34,17 @@ src/agentspaces/
 │   ├── naming.py              # Name generation
 │   ├── paths.py               # Path resolution
 │   ├── design.py              # Template rendering
+│   ├── skeleton.py            # Project structure definitions
 │   ├── resources.py           # Package resource access
 │   ├── frontmatter.py         # YAML frontmatter parser
 │   └── logging.py             # structlog config
 └── templates/                 # Bundled project templates
-    └── skeleton/              # Project skeleton templates
-        ├── CLAUDE.md          # Agent constitution template
-        ├── TODO.md            # Task list template
-        ├── .claude/           # Agent/command templates
-        └── docs/              # ADR and design templates
+    ├── skeleton/              # Project skeleton templates
+    │   ├── CLAUDE.md          # Agent constitution template
+    │   ├── .claude/           # Agent/command templates
+    │   └── docs/              # ADR and design templates
+    └── languages/             # Language-specific packs
+        └── python/            # Python tooling templates
 ```
 
 ## Architecture
@@ -70,6 +73,10 @@ A workspace is:
 ## Commands
 
 ```bash
+# Project initialization
+agentspaces project create              # Initialize new project in current dir
+agentspaces project create --python     # With Python language pack
+
 # Workspaces
 agentspaces workspace create [branch]   # Create workspace
 agentspaces workspace list              # List workspaces
@@ -152,7 +159,6 @@ See [RELEASING.md](RELEASING.md) for full details on versioning and releases.
 
 ## Documentation
 
-- [TODO.md](TODO.md) - Active task list
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Development guide
 - [RELEASING.md](RELEASING.md) - Version management and release process
 - [CHANGELOG.md](CHANGELOG.md) - Project changelog (auto-generated)
@@ -168,7 +174,7 @@ Use [Beads](https://github.com/steveyegge/beads) for lightweight issue tracking 
 bd ready --json
 
 # Create issues
-bd create "title" -t <type> -p <priority>
+bd create "title" -t <type> -p <priority> -d <task details>
 # Types: feature, bug, task, chore
 # Priority: 1 (critical) to 4 (low)
 
@@ -183,6 +189,33 @@ bd dep add <new-id> <current-id> --type discovered-from
 
 # End session - sync changes
 bd sync
+```
+
+### Task Description Standards
+
+When creating Beads issues, include comprehensive standalone context so tasks can be independently executed by an agent without conversation history:
+
+- **Context**: What system/command is involved, relevant source files
+- **Goal**: Specific objective of the task
+- **Implementation**: Code examples, file paths, specific steps
+- **Dependencies**: What other tasks/files are prerequisites
+- **Verification**: Commands to confirm task completion
+
+Example:
+```bash
+bd create "Add validation to user input" -t task -p 2 -d "## Context
+The user registration form in src/api/routes/auth.py accepts email without validation.
+
+## Goal
+Add email format validation before creating user accounts.
+
+## Implementation
+1. Add email-validator to dependencies in pyproject.toml
+2. Create validate_email() in src/api/validators.py
+3. Call validator in register_user() route handler
+
+## Verification
+uv run pytest tests/api/test_auth.py -k email_validation"
 ```
 
 ## Learned Patterns

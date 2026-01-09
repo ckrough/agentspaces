@@ -23,6 +23,7 @@ __all__ = [
     "get_main_git_dir",
     "get_repo_name",
     "get_repo_root",
+    "init",
     "is_dirty",
     "is_git_repo",
     "is_in_worktree",
@@ -370,6 +371,19 @@ def is_git_repo(path: Path) -> bool:
     """
     result = _run_git(["rev-parse", "--git-dir"], cwd=path, check=False)
     return result.returncode == 0
+
+
+def init(path: Path | None = None) -> None:
+    """Initialize a new git repository.
+
+    Args:
+        path: Directory to initialize (defaults to current directory).
+
+    Raises:
+        GitError: If initialization fails.
+    """
+    logger.info("git_init", path=str(path) if path else None)
+    _run_git(["init"], cwd=path)
 
 
 def is_dirty(cwd: Path | None = None) -> bool:

@@ -14,6 +14,7 @@ from pathlib import Path
 
 __all__ = [
     "ResourceError",
+    "get_language_templates_dir",
     "get_skeleton_templates_dir",
     "get_skills_templates_dir",
 ]
@@ -93,3 +94,26 @@ def get_skills_templates_dir() -> Path:
         raise ResourceError(f"Skills templates directory not found: {skills_dir}")
 
     return skills_dir
+
+
+def get_language_templates_dir(language: str) -> Path:
+    """Get the templates directory for a specific language pack.
+
+    Args:
+        language: Language name (e.g., "python").
+
+    Returns:
+        Path to the templates/languages/{language} directory.
+
+    Raises:
+        ResourceError: If the directory cannot be accessed or doesn't exist.
+    """
+    templates_dir = _get_templates_dir()
+    language_dir = templates_dir / "languages" / language
+
+    if not language_dir.exists():
+        raise ResourceError(
+            f"Language pack '{language}' not found. Expected directory: {language_dir}"
+        )
+
+    return language_dir

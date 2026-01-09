@@ -110,7 +110,6 @@ def create(
     )
 
     print_next_steps(
-        workspace_name=workspace.name,
         workspace_path=str(workspace.path),
         has_venv=workspace.has_venv,
     )

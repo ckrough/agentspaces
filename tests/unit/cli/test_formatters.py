@@ -57,7 +57,7 @@ class TestPrintNextSteps:
     def test_prints_cd_step(self) -> None:
         """Should include cd to workspace path."""
         with patch("agentspaces.cli.formatters.console") as mock_console:
-            print_next_steps("test-ws", "/path/to/workspace", has_venv=False)
+            print_next_steps("/path/to/workspace", has_venv=False)
             mock_console.print.assert_called()
             # Get all printed content - find the Panel with "Next Steps"
             panel = _find_next_steps_panel(mock_console)
@@ -67,23 +67,40 @@ class TestPrintNextSteps:
     def test_includes_venv_activation_when_has_venv(self) -> None:
         """Should include venv activation when has_venv is True."""
         with patch("agentspaces.cli.formatters.console") as mock_console:
-            print_next_steps("test-ws", "/path/to/workspace", has_venv=True)
+            print_next_steps("/path/to/workspace", has_venv=True)
             panel = _find_next_steps_panel(mock_console)
             assert "source .venv/bin/activate" in panel.renderable
 
     def test_excludes_venv_activation_when_no_venv(self) -> None:
         """Should not include venv activation when has_venv is False."""
         with patch("agentspaces.cli.formatters.console") as mock_console:
-            print_next_steps("test-ws", "/path/to/workspace", has_venv=False)
+            print_next_steps("/path/to/workspace", has_venv=False)
             panel = _find_next_steps_panel(mock_console)
             assert "source .venv/bin/activate" not in panel.renderable
 
-    def test_includes_remove_step(self) -> None:
-        """Should include workspace remove step with workspace name."""
+    def test_combines_cd_and_activation(self) -> None:
+        """Should combine cd and activation into single command with &&."""
         with patch("agentspaces.cli.formatters.console") as mock_console:
-            print_next_steps("test-ws", "/path/to/workspace", has_venv=False)
+            print_next_steps("/path/to/workspace", has_venv=True)
             panel = _find_next_steps_panel(mock_console)
-            assert "agentspaces workspace remove test-ws" in panel.renderable
+            assert "cd" in panel.renderable
+            assert "&&" in panel.renderable
+            assert "source .venv/bin/activate" in panel.renderable
+
+    def test_does_not_include_remove_command(self) -> None:
+        """Should not include workspace remove command."""
+        with patch("agentspaces.cli.formatters.console") as mock_console:
+            print_next_steps("/path/to/workspace", has_venv=False)
+            panel = _find_next_steps_panel(mock_console)
+            assert "remove" not in panel.renderable
+
+    def test_quotes_path_with_spaces(self) -> None:
+        """Should properly quote paths containing spaces."""
+        with patch("agentspaces.cli.formatters.console") as mock_console:
+            print_next_steps("/path/with spaces/workspace", has_venv=False)
+            panel = _find_next_steps_panel(mock_console)
+            # shlex.quote adds single quotes around paths with spaces
+            assert "'/path/with spaces/workspace'" in panel.renderable
 
 
 class TestPrintDidYouMean:

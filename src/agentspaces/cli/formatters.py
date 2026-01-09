@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shlex
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
@@ -97,18 +98,21 @@ def print_workspace_created(
     console.print(panel)
 
 
-def print_next_steps(workspace_name: str, workspace_path: str, has_venv: bool) -> None:
+def print_next_steps(workspace_path: str, has_venv: bool) -> None:
     """Print actionable next steps after workspace creation.
 
     Args:
-        workspace_name: Name of the created workspace.
         workspace_path: Path to the workspace directory.
         has_venv: Whether a virtual environment was created.
     """
-    steps = [f"cd {workspace_path}"]
+    # Quote path for shell safety
+    quoted_path = shlex.quote(workspace_path)
+
+    # Combine cd and venv activation into single command
     if has_venv:
-        steps.append("source .venv/bin/activate")
-    steps.append(f"agentspaces workspace remove {workspace_name}")
+        steps = [f"cd {quoted_path} && source .venv/bin/activate"]
+    else:
+        steps = [f"cd {quoted_path}"]
 
     lines = [f"  {i + 1}. [cyan]{step}[/cyan]" for i, step in enumerate(steps)]
     panel = Panel(

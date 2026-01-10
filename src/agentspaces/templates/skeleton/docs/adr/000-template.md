@@ -6,18 +6,14 @@ when_to_use:
   - Recording significant technical decisions
   - Decisions future developers will ask "why?"
 variables:
-  required:
-    - adr_number
-    - adr_title
-  optional:
-    - adr_date
-    - adr_status
+  required: []
+  optional: []
 ---
 
-# {{ adr_number }}. {{ adr_title }}
+# ADR-XXX: Decision Title
 
-Date: {{ adr_date | default("YYYY-MM-DD") }}
-Status: {{ adr_status | default("Proposed") }}
+Date: YYYY-MM-DD
+Status: Proposed
 
 ## Context
 

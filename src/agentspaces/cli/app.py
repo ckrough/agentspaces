@@ -12,7 +12,7 @@ from agentspaces.infrastructure.logging import configure_logging
 app = typer.Typer(
     name="agentspaces",
     help="Workspace orchestration tool for AI coding agents.",
-    no_args_is_help=True,
+    no_args_is_help=False,
     context_settings={"help_option_names": ["-h", "--help"]},
 )
 
@@ -30,8 +30,9 @@ def version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
-@app.callback()
+@app.callback(invoke_without_command=True)
 def main(
+    ctx: typer.Context,
     version: bool = typer.Option(  # noqa: ARG001 - handled by callback
         None,
         "--version",
@@ -53,3 +54,7 @@ def main(
     """
     # Configure logging (debug only when verbose)
     configure_logging(debug=verbose)
+
+    # Launch TUI if no subcommand provided
+    if ctx.invoked_subcommand is None:
+        tui.main(ctx)

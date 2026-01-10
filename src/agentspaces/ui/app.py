@@ -169,10 +169,17 @@ class WorkspacesTUI(App[None]):
         if cursor_row < 0 or cursor_row >= len(self.workspaces):
             return
 
+        workspace = self.workspaces[cursor_row]
+        is_current = str(workspace.path) == self.current_path
+
         if cursor_row in self.selected_rows:
             self.selected_rows.remove(cursor_row)
+            table.set_row_selected(
+                workspace.name, selected=False, is_current=is_current
+            )
         else:
             self.selected_rows.add(cursor_row)
+            table.set_row_selected(workspace.name, selected=True, is_current=is_current)
 
         # Visual feedback
         self.notify(f"Selected: {len(self.selected_rows)} workspace(s)")

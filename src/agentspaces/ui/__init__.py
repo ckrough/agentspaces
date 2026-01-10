@@ -1,7 +1,7 @@
 """UI module for agentspaces TUI."""
 
 from agentspaces.ui.app import WorkspacesTUI
-from agentspaces.ui.terminal import detect_terminal, navigate_to_workspace
+from agentspaces.ui.terminal import detect_terminal
 from agentspaces.ui.widgets import (
     ConfirmRemoveModal,
     PreviewPanel,
@@ -18,5 +18,4 @@ __all__ = [
     "WorkspaceTable",
     "WorkspacesTUI",
     "detect_terminal",
-    "navigate_to_workspace",
 ]

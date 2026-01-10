@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from rich.text import Text
 from textual.containers import Container, Horizontal
+from textual.content import Content
 from textual.screen import ModalScreen
 from textual.widgets import (
     Button,
@@ -15,6 +16,8 @@ from textual.widgets import (
     Header,
     Static,
 )
+
+from agentspaces import __version__
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
@@ -163,7 +166,7 @@ class PreviewPanel(Static):
 
 
 class WorkspaceHeader(Header):
-    """Header showing main repository checkout info."""
+    """Header showing main repository checkout info and version."""
 
     def __init__(self, main_checkout: WorkspaceInfo | None = None) -> None:
         """Initialize header.
@@ -173,7 +176,6 @@ class WorkspaceHeader(Header):
         """
         super().__init__()
         self._main_checkout = main_checkout
-        self._update_title()
 
     def set_main_checkout(self, main_checkout: WorkspaceInfo | None) -> None:
         """Update main checkout display.
@@ -182,17 +184,33 @@ class WorkspaceHeader(Header):
             main_checkout: Main repository checkout info.
         """
         self._main_checkout = main_checkout
-        self._update_title()
+        # Trigger header title refresh
+        self._refresh_title()
 
-    def _update_title(self) -> None:
-        """Update header title with main checkout info."""
+    def _refresh_title(self) -> None:
+        """Refresh the header title display."""
+        from textual.css.query import NoMatches
+        from textual.widgets._header import HeaderTitle
+
+        try:
+            header_title = self.query_one(HeaderTitle)
+            header_title.update(self.format_title())
+        except NoMatches:
+            pass  # Widget not yet mounted
+
+    def format_title(self) -> Content:
+        """Format the header title with main checkout info and version.
+
+        Returns:
+            Formatted title content.
+        """
         if self._main_checkout:
             project = self._main_checkout.project
             branch = self._main_checkout.branch
-            self.tall_title = True
-            self._text = f"agentspaces  •  Main: {project} ({branch})"
-        else:
-            self._text = "agentspaces"
+            return Content(
+                f"agentspaces  •  Main: {project} ({branch})  •  v{__version__}"
+            )
+        return Content(f"agentspaces  •  v{__version__}")
 
 
 class WorkspaceFooter(Footer):

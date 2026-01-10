@@ -20,7 +20,6 @@ from agentspaces.modules.workspace.service import (
     WorkspaceNotFoundError,
     WorkspaceService,
 )
-from agentspaces.ui.terminal import detect_terminal, navigate_to_workspace
 from agentspaces.ui.widgets import (
     ConfirmRemoveModal,
     PreviewPanel,
@@ -33,14 +32,17 @@ __all__ = ["WorkspacesTUI"]
 logger = structlog.get_logger()
 
 
-class WorkspacesTUI(App[None]):
+class WorkspacesTUI(App[WorkspaceInfo | None]):
     """Interactive TUI for workspace management.
 
     Features:
     - Browse workspaces with arrow keys
-    - Navigate to workspace (CD + activate venv + start claude)
+    - Navigate to workspace (returns workspace info for shell execution)
     - Remove single or multiple workspaces
     - Preview workspace details before actions
+
+    Returns:
+        WorkspaceInfo if user pressed Enter on a workspace, None otherwise.
     """
 
     CSS = """
@@ -184,8 +186,12 @@ class WorkspacesTUI(App[None]):
         # Visual feedback
         self.notify(f"Selected: {len(self.selected_rows)} workspace(s)")
 
-    async def action_navigate(self) -> None:
-        """Navigate to selected workspace."""
+    def action_navigate(self) -> None:
+        """Navigate to selected workspace and exit TUI.
+
+        Returns the selected workspace via exit() so the CLI can
+        execute shell commands (cd, venv activation, claude launch).
+        """
         table = self.query_one(WorkspaceTable)
         cursor_row = table.cursor_row
 
@@ -193,23 +199,8 @@ class WorkspacesTUI(App[None]):
             return
 
         workspace = self.workspaces[cursor_row]
-
-        # Check if Ghostty is available before attempting
-        is_ghostty, _ = detect_terminal()
-
-        if is_ghostty:
-            self.notify(
-                f"Opening {workspace.name} in new Ghostty tab...",
-                severity="information",
-            )
-        else:
-            self.notify(
-                "Ghostty not detected - check console for commands",
-                severity="warning",
-            )
-
-        # Navigate (Ghostty tab or print instructions)
-        navigate_to_workspace(workspace)
+        logger.info("workspace_selected", name=workspace.name)
+        self.exit(workspace)
 
     @work()
     async def action_remove(self) -> None:

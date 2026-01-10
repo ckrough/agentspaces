@@ -222,8 +222,8 @@ def generate_name(
         RuntimeError: If unable to generate unique name after max_attempts.
     """
     for _ in range(max_attempts):
-        adjective = random.choice(ADJECTIVES)
-        noun = random.choice(NOUNS)
+        adjective = random.choice(ADJECTIVES)  # nosec B311 - not security-sensitive
+        noun = random.choice(NOUNS)  # nosec B311 - not security-sensitive
         name = f"{adjective}-{noun}"
 
         if exists_check is None or not exists_check(name):

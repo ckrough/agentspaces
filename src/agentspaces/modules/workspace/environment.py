@@ -161,7 +161,7 @@ def _get_venv_python_version(workspace_path: Path) -> str | None:
                         version_parts = full_version.split(".")
                         if len(version_parts) >= 2:
                             return f"{version_parts[0]}.{version_parts[1]}"
-        except Exception:
+        except Exception:  # nosec B110 - best-effort version parsing
             pass
 
     return None

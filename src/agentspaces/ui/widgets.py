@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
 from typing import TYPE_CHECKING
 
+from rich.text import Text
 from textual.containers import Container, Horizontal
 from textual.screen import ModalScreen
 from textual.widgets import (
@@ -60,20 +62,54 @@ class WorkspaceTable(DataTable[str]):
 
         for workspace in workspaces:
             # Visual indicators
-            name_display = workspace.name
-            if current_path and str(workspace.path) == current_path:
-                name_display = f"→ {name_display}"
+            is_current = current_path and str(workspace.path) == current_path
+            if is_current:
+                name_display = Text(f"→ {workspace.name}")
+            else:
+                name_display = Text(workspace.name)
 
             venv_display = "✓" if workspace.has_venv else ""
             purpose_display = self._truncate(workspace.purpose or "", 38)
 
+            # DataTable supports Rich renderables per Textual docs
             self.add_row(
-                name_display,
+                name_display,  # type: ignore[arg-type]
                 workspace.branch,
                 purpose_display,
                 venv_display,
                 key=workspace.name,
             )
+
+    def set_row_selected(
+        self, row_key: str, selected: bool, is_current: bool = False
+    ) -> None:
+        """Update row display to show selection state.
+
+        Args:
+            row_key: The row key (workspace name) to update.
+            selected: Whether the row is selected.
+            is_current: Whether this is the current workspace.
+        """
+        # Build display name with indicators
+        # Show both indicators when both conditions apply
+        prefix = ""
+        if is_current:
+            prefix = "→ "
+        if selected:
+            prefix = "◆ " + prefix  # "◆ → " when both selected and current
+
+        display_name = f"{prefix}{row_key}"
+
+        # Style selected rows distinctly
+        if selected:
+            styled = Text(display_name, style="bold cyan")
+        else:
+            styled = Text(display_name)
+
+        # DataTable supports Rich renderables per Textual docs
+        # Suppress KeyError if row was removed between toggle and update
+        with contextlib.suppress(KeyError):
+            self.update_cell(row_key, "name", styled)  # type: ignore[arg-type]
 
     @staticmethod
     def _truncate(text: str, max_length: int) -> str:

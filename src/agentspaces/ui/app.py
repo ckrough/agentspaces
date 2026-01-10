@@ -76,7 +76,8 @@ class WorkspacesTUI(App[WorkspaceInfo | None]):
     BINDINGS: ClassVar[list[Binding]] = [  # type: ignore[assignment]
         Binding("q", "quit", "Quit"),
         Binding("r", "refresh", "Refresh"),
-        Binding("enter", "navigate", "Navigate"),
+        # Enter handled via on_data_table_row_selected; binding kept for footer display
+        Binding("enter", "navigate", "Navigate", show=True),
         Binding("d", "remove", "Remove"),
         Binding("space", "toggle_select", "Select"),
     ]
@@ -161,6 +162,14 @@ class WorkspacesTUI(App[WorkspaceInfo | None]):
             workspace = self.workspaces[event.cursor_row]
             preview = self.query_one(PreviewPanel)
             preview.update_preview(workspace)
+
+    def on_data_table_row_selected(self, _event: DataTable.RowSelected) -> None:
+        """Handle row selection (Enter pressed on DataTable).
+
+        DataTable consumes Enter key and emits RowSelected, so we handle
+        navigation here rather than via App-level keybinding.
+        """
+        self.action_navigate()
 
     def action_toggle_select(self) -> None:
         """Toggle selection of current row."""

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import shlex
+import shutil
 import subprocess  # nosec B404 - subprocess needed for Ghostty integration
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -16,23 +17,37 @@ if TYPE_CHECKING:
 
 __all__ = [
     "detect_terminal",
+    "is_ghostty_available",
     "navigate_to_workspace",
 ]
 
 logger = structlog.get_logger()
 
 
+def is_ghostty_available() -> bool:
+    """Check if Ghostty terminal is installed and available.
+
+    Returns:
+        True if ghostty command exists in PATH.
+    """
+    return shutil.which("ghostty") is not None
+
+
 def detect_terminal() -> tuple[bool, str]:
-    """Detect if running in Ghostty terminal.
+    """Detect if running in Ghostty terminal and if Ghostty is available.
 
     Returns:
         Tuple of (is_ghostty, shell_type).
-        is_ghostty: True if running in Ghostty terminal
+        is_ghostty: True if running in Ghostty terminal AND ghostty command is available
         shell_type: Name of current shell (e.g., 'bash', 'zsh', 'fish')
     """
     # Check TERM_PROGRAM environment variable (set by Ghostty)
     term_program = os.environ.get("TERM_PROGRAM", "")
-    is_ghostty = term_program == "ghostty"
+    is_ghostty_env = term_program == "ghostty"
+    is_ghostty_installed = is_ghostty_available()
+
+    # Only consider Ghostty available if both conditions met
+    is_ghostty = is_ghostty_env and is_ghostty_installed
 
     # Detect shell type
     shell_path = os.environ.get("SHELL", "")
@@ -41,6 +56,8 @@ def detect_terminal() -> tuple[bool, str]:
     logger.debug(
         "terminal_detected",
         is_ghostty=is_ghostty,
+        is_ghostty_env=is_ghostty_env,
+        is_ghostty_installed=is_ghostty_installed,
         shell_type=shell_type,
         term_program=term_program,
     )
@@ -73,35 +90,56 @@ def navigate_to_workspace(workspace: WorkspaceInfo) -> None:
     full_command = " && ".join(commands)
 
     if is_ghostty:
-        _navigate_ghostty(full_command, workspace.name)
+        _navigate_ghostty(full_command, commands, workspace.name)
     else:
         _navigate_fallback(commands, workspace.name)
 
 
-def _navigate_ghostty(command: str, workspace_name: str) -> None:
+def _navigate_ghostty(command: str, commands: list[str], workspace_name: str) -> None:
     """Create new Ghostty tab and execute navigation command.
 
     Args:
         command: Full command to execute in new tab.
+        commands: Original command list for fallback display.
         workspace_name: Name of workspace (for logging).
     """
     try:
-        # Create new Ghostty tab with command
-        subprocess.Popen(  # nosec B603,B607
-            ["ghostty", "+new-tab", command],
-            start_new_session=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+        # Ghostty requires explicit shell invocation for compound commands
+        shell = os.environ.get("SHELL", "/bin/bash")
+
+        # Use subprocess.run with proper error handling
+        subprocess.run(  # nosec B603,B607
+            ["ghostty", "--command", shell, "-c", command],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True,
         )
         logger.info("ghostty_tab_created", workspace=workspace_name)
-    except (FileNotFoundError, OSError) as e:
+
+    except FileNotFoundError:
         logger.warning(
-            "ghostty_tab_failed",
+            "ghostty_not_found",
             workspace=workspace_name,
-            error=str(e),
+            hint="Ghostty not installed or not in PATH",
         )
-        # Fallback to print mode
-        _navigate_fallback(command.split(" && "), workspace_name)
+        _navigate_fallback(commands, workspace_name)
+
+    except subprocess.TimeoutExpired:
+        logger.warning(
+            "ghostty_timeout",
+            workspace=workspace_name,
+        )
+        _navigate_fallback(commands, workspace_name)
+
+    except subprocess.CalledProcessError as e:
+        logger.warning(
+            "ghostty_failed",
+            workspace=workspace_name,
+            exit_code=e.returncode,
+            stderr=e.stderr,
+        )
+        _navigate_fallback(commands, workspace_name)
 
 
 def _navigate_fallback(commands: list[str], workspace_name: str) -> None:

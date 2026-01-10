@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import functools
 import re
-import subprocess
+import subprocess  # nosec B404 - subprocess needed for uv CLI operations
 from pathlib import Path  # noqa: TC003 - used at runtime for path operations
 from typing import TYPE_CHECKING
 
@@ -94,7 +94,7 @@ def _run_uv(
     logger.debug("uv_command", cmd=cmd, cwd=str(cwd) if cwd else None)
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603 - cmd constructed internally from trusted args
             cmd,
             cwd=cwd,
             capture_output=True,

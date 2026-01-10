@@ -233,8 +233,8 @@ def render_design_template(
     except FrontmatterError as e:
         raise DesignError(f"Invalid template frontmatter: {e}") from e
 
-    # Set up Jinja2 environment
-    env = Environment(
+    # Set up Jinja2 environment (Markdown templates, no HTML context)
+    env = Environment(  # nosec B701
         loader=FileSystemLoader(str(template.path.parent)),
         autoescape=False,  # Markdown doesn't need HTML escaping
         trim_blocks=True,
@@ -348,8 +348,8 @@ def render_language_template(
     except FrontmatterError as e:
         raise DesignError(f"Invalid template frontmatter: {e}") from e
 
-    # Set up Jinja2 environment
-    env = Environment(
+    # Set up Jinja2 environment (Markdown templates, no HTML context)
+    env = Environment(  # nosec B701
         loader=FileSystemLoader(str(template_path.parent)),
         autoescape=False,
         trim_blocks=True,

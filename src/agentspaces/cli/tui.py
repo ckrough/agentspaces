@@ -42,7 +42,7 @@ def _get_tab_title(workspace: WorkspaceInfo) -> str:
     # Check if purpose looks like a beads issue ID
     if workspace.purpose and workspace.purpose.startswith("agentspaces-"):
         try:
-            result = subprocess.run(  # nosec B603,B607
+            result = subprocess.run(  # nosec: B603, B607
                 ["bd", "show", workspace.purpose, "--json"],
                 capture_output=True,
                 text=True,
@@ -119,7 +119,7 @@ def _execute_workspace_navigation(workspace: WorkspaceInfo) -> None:
     shell = os.environ.get("SHELL", "/bin/bash")
     commands = _build_navigation_commands(workspace, tab_title)
 
-    logger.info(
+    logger.info(  # nosec B604 - shell is a log field name, not a subprocess parameter
         "executing_workspace_navigation",
         workspace=workspace.name,
         tab_title=tab_title,

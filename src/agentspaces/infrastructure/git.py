@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import subprocess
+import subprocess  # nosec B404 - subprocess needed for git CLI operations
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -96,7 +96,7 @@ def _run_git(
     logger.debug("git_command", cmd=cmd, cwd=str(cwd) if cwd else None)
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603 - cmd constructed internally from trusted args
             cmd,
             cwd=cwd,
             capture_output=True,

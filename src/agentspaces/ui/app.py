@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar
 
 import structlog
+from textual import work
 from textual.app import App
 from textual.binding import Binding
 from textual.widgets import DataTable, Footer
@@ -195,6 +196,7 @@ class WorkspacesTUI(App[None]):
             severity="information",
         )
 
+    @work()
     async def action_remove(self) -> None:
         """Remove selected workspace(s) after confirmation."""
         # Determine which workspaces to remove

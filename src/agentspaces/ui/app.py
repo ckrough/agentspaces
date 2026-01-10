@@ -20,7 +20,7 @@ from agentspaces.modules.workspace.service import (
     WorkspaceNotFoundError,
     WorkspaceService,
 )
-from agentspaces.ui.terminal import navigate_to_workspace
+from agentspaces.ui.terminal import detect_terminal, navigate_to_workspace
 from agentspaces.ui.widgets import (
     ConfirmRemoveModal,
     PreviewPanel,
@@ -187,14 +187,22 @@ class WorkspacesTUI(App[None]):
 
         workspace = self.workspaces[cursor_row]
 
+        # Check if Ghostty is available before attempting
+        is_ghostty, _ = detect_terminal()
+
+        if is_ghostty:
+            self.notify(
+                f"Opening {workspace.name} in new Ghostty tab...",
+                severity="information",
+            )
+        else:
+            self.notify(
+                "Ghostty not detected - check console for commands",
+                severity="warning",
+            )
+
         # Navigate (Ghostty tab or print instructions)
         navigate_to_workspace(workspace)
-
-        # Notify user
-        self.notify(
-            f"Navigating to {workspace.name}...",
-            severity="information",
-        )
 
     @work()
     async def action_remove(self) -> None:

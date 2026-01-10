@@ -244,7 +244,11 @@ def create(
 
     # Render template
     try:
-        result_path = render_design_template(template_name, context, output_file)
+        # Skip frontmatter for CLAUDE.md (users see it as project doc, not template metadata)
+        preserve_frontmatter = template_name != "claude-md"
+        result_path = render_design_template(
+            template_name, context, output_file, preserve_frontmatter
+        )
     except DesignError as e:
         error_console.print(f"[red]✗[/red] {e}")
         raise typer.Exit(1) from e

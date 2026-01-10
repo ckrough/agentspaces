@@ -192,6 +192,7 @@ def render_design_template(
     template_name: str,
     context: dict[str, Any],
     output_path: Path,
+    preserve_frontmatter: bool = True,
 ) -> Path:
     """Render a design template with the given context.
 
@@ -202,6 +203,8 @@ def render_design_template(
         template_name: Name of the template (e.g., "architecture").
         context: Variables to pass to the template.
         output_path: Where to write the rendered document.
+        preserve_frontmatter: Whether to include frontmatter in output.
+            Default True. Set False for user-facing docs like CLAUDE.md.
 
     Returns:
         Path to the generated document.
@@ -249,29 +252,34 @@ def render_design_template(
     except Exception as e:
         raise DesignError(f"Template rendering failed: {e}") from e
 
-    # Build output frontmatter (keep discovery metadata, strip template metadata)
-    output_frontmatter = {
-        "name": frontmatter.get("name", template_name),
-        "description": frontmatter.get("description", ""),
-    }
-    if "category" in frontmatter:
-        output_frontmatter["category"] = frontmatter["category"]
-    if "when_to_use" in frontmatter:
-        output_frontmatter["when_to_use"] = frontmatter["when_to_use"]
-    if "dependencies" in frontmatter:
-        output_frontmatter["dependencies"] = frontmatter["dependencies"]
+    # Build output with or without frontmatter
+    if preserve_frontmatter:
+        # Build output frontmatter (keep discovery metadata, strip template metadata)
+        output_frontmatter = {
+            "name": frontmatter.get("name", template_name),
+            "description": frontmatter.get("description", ""),
+        }
+        if "category" in frontmatter:
+            output_frontmatter["category"] = frontmatter["category"]
+        if "when_to_use" in frontmatter:
+            output_frontmatter["when_to_use"] = frontmatter["when_to_use"]
+        if "dependencies" in frontmatter:
+            output_frontmatter["dependencies"] = frontmatter["dependencies"]
 
-    # Format frontmatter as YAML (wide width prevents line wrapping)
-    frontmatter_yaml = yaml.dump(
-        output_frontmatter,
-        default_flow_style=False,
-        allow_unicode=True,
-        sort_keys=False,
-        width=1000,  # Prevent line wrapping for single-line values
-    ).strip()
+        # Format frontmatter as YAML (wide width prevents line wrapping)
+        frontmatter_yaml = yaml.dump(
+            output_frontmatter,
+            default_flow_style=False,
+            allow_unicode=True,
+            sort_keys=False,
+            width=1000,  # Prevent line wrapping for single-line values
+        ).strip()
 
-    # Combine frontmatter and rendered body
-    rendered = f"---\n{frontmatter_yaml}\n---\n{rendered_body}"
+        # Combine frontmatter and rendered body
+        rendered = f"---\n{frontmatter_yaml}\n---\n{rendered_body}"
+    else:
+        # Skip frontmatter for user-facing docs (e.g., CLAUDE.md)
+        rendered = rendered_body
 
     # Ensure output directory exists
     try:

@@ -259,15 +259,19 @@ class TestProjectCreateContent:
         chdir_to: Callable[[Path], None],
         invoke_project_create: Callable[..., Any],
     ) -> None:
-        """Markdown files should have valid YAML frontmatter."""
+        """Design template markdown files should have valid YAML frontmatter.
+
+        Note: CLAUDE.md is excluded as it's rendered without frontmatter
+        for cleaner user experience (users see it as project documentation,
+        not as a template with metadata).
+        """
         chdir_to(empty_dir)
 
         invoke_project_create()
 
-        # Check a sample of generated files
+        # Check design templates (excluding CLAUDE.md)
         for md_file in [
             empty_dir / "README.md",
-            empty_dir / "CLAUDE.md",
             empty_dir / "docs" / "design" / "architecture.md",
         ]:
             content = md_file.read_text()
@@ -275,6 +279,12 @@ class TestProjectCreateContent:
             # Find end of frontmatter
             end = content.find("\n---\n", 4)
             assert end > 0, f"{md_file} has unclosed frontmatter"
+
+        # CLAUDE.md should NOT have frontmatter
+        claude_md = (empty_dir / "CLAUDE.md").read_text()
+        assert not claude_md.startswith("---\n"), (
+            "CLAUDE.md should not have frontmatter"
+        )
 
 
 @pytest.mark.integration

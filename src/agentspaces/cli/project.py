@@ -268,7 +268,11 @@ def create(
         output_path = cwd / relative_path
         try:
             _validate_output_path(output_path, cwd)
-            render_design_template(template_name, context, output_path)
+            # Skip frontmatter for CLAUDE.md (users see it as project doc, not template metadata)
+            preserve_frontmatter = template_name != "claude-md"
+            render_design_template(
+                template_name, context, output_path, preserve_frontmatter
+            )
             created.append(output_path)
         except (DesignError, ValueError) as e:
             failed.append((template_name, str(e)))

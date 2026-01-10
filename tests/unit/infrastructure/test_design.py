@@ -140,6 +140,26 @@ class TestRenderDesignTemplate:
         # Variables section should be stripped (template metadata, not doc metadata)
         assert "variables:" not in content
 
+    def test_skips_frontmatter_when_disabled(self, temp_dir: Path) -> None:
+        """Should skip frontmatter when preserve_frontmatter=False."""
+        output = temp_dir / "claude.md"
+
+        render_design_template(
+            "claude-md",
+            {"project_name": "TestApp"},
+            output,
+            preserve_frontmatter=False,
+        )
+
+        content = output.read_text()
+        # Frontmatter should NOT be present
+        assert not content.startswith("---\n")
+        assert "name:" not in content
+        assert "description:" not in content
+        assert "category:" not in content
+        # Body should still be rendered
+        assert "# TestApp" in content
+
     def test_error_on_missing_required_variable(self, temp_dir: Path) -> None:
         """Should raise DesignError when required variable missing."""
         output = temp_dir / "architecture.md"

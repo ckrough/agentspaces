@@ -9,6 +9,7 @@ from pathlib import Path  # noqa: TC003 - used at runtime in dataclass
 import structlog
 
 from agentspaces.infrastructure import git
+from agentspaces.infrastructure.beads import BeadsIssue  # noqa: TC001 - used at runtime
 from agentspaces.infrastructure.metadata import (
     WorkspaceMetadata,
     load_workspace_metadata,
@@ -44,6 +45,7 @@ class WorkspaceInfo:
     python_version: str | None = None
     has_venv: bool = False
     status: str = "active"
+    issue_id: str | None = None
 
 
 class WorkspaceError(Exception):
@@ -90,9 +92,11 @@ class WorkspaceService:
         *,
         base_branch: str = "HEAD",
         attach_branch: str | None = None,
+        workspace_name: str | None = None,
         purpose: str | None = None,
         python_version: str | None = None,
         setup_venv: bool = True,
+        issue_id: str | None = None,
         cwd: Path | None = None,
     ) -> WorkspaceInfo:
         """Create a new workspace.
@@ -104,9 +108,12 @@ class WorkspaceService:
             base_branch: Branch to create workspace from (ignored if attach_branch set).
             attach_branch: Existing branch to attach to. When set, no new branch is
                 created and the workspace name matches the branch name.
+            workspace_name: Custom workspace name. If None, generates random name.
+                Ignored if attach_branch is set.
             purpose: Description of workspace purpose.
             python_version: Python version for venv (auto-detected if not specified).
             setup_venv: Whether to create a virtual environment.
+            issue_id: Beads issue ID to associate with workspace.
             cwd: Current working directory.
 
         Returns:
@@ -141,6 +148,7 @@ class WorkspaceService:
                 result = worktree.create_worktree(
                     project=project,
                     base_branch=base_branch,
+                    workspace_name=workspace_name,
                     repo_root=repo_root,
                     resolver=self._resolver,
                 )
@@ -184,6 +192,7 @@ class WorkspaceService:
             purpose=purpose,
             python_version=env_info.python_version if env_info else None,
             has_venv=env_info.has_venv if env_info else False,
+            issue_id=issue_id,
         )
 
         metadata_path = self._resolver.workspace_json(project, result.name)
@@ -219,6 +228,7 @@ class WorkspaceService:
             purpose=purpose,
             python_version=env_info.python_version if env_info else None,
             has_venv=env_info.has_venv if env_info else False,
+            issue_id=issue_id,
         )
 
         logger.info(
@@ -230,6 +240,46 @@ class WorkspaceService:
         )
 
         return workspace
+
+    def create_from_issue(
+        self,
+        issue: BeadsIssue,
+        *,
+        base_branch: str = "HEAD",
+        python_version: str | None = None,
+        setup_venv: bool = True,
+        cwd: Path | None = None,
+    ) -> WorkspaceInfo:
+        """Create workspace from beads issue.
+
+        Uses issue.id as workspace name and branch name.
+        Sets purpose to "{issue.id}: {issue.title}".
+        Stores issue_id in metadata.
+
+        Args:
+            issue: Beads issue to create workspace for.
+            base_branch: Branch to create workspace from.
+            python_version: Python version for venv (auto-detected if not specified).
+            setup_venv: Whether to create a virtual environment.
+            cwd: Current working directory.
+
+        Returns:
+            WorkspaceInfo with details.
+
+        Raises:
+            WorkspaceError: If workspace/branch already exists.
+        """
+        purpose = f"{issue.id}: {issue.title}"
+
+        return self.create(
+            base_branch=base_branch,
+            workspace_name=issue.id,
+            purpose=purpose,
+            issue_id=issue.id,
+            python_version=python_version,
+            setup_venv=setup_venv,
+            cwd=cwd,
+        )
 
     def list(self, *, cwd: Path | None = None) -> list[WorkspaceInfo]:
         """List all workspaces for the current repository.
@@ -280,6 +330,7 @@ class WorkspaceService:
                     python_version=metadata.python_version if metadata else None,
                     has_venv=metadata.has_venv if metadata else False,
                     status=metadata.status if metadata else "active",
+                    issue_id=metadata.issue_id if metadata else None,
                 )
             )
 
@@ -334,6 +385,7 @@ class WorkspaceService:
             if metadata
             else (workspace_path / ".venv").exists(),
             status=metadata.status if metadata else "active",
+            issue_id=metadata.issue_id if metadata else None,
         )
 
     def remove(

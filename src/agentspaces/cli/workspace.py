@@ -112,7 +112,7 @@ def create(
                 issues = beads.get_ready_issues()
                 if not issues:
                     print_error("No ready issues found. Create with: bd create")
-                    raise typer.Exit(0)
+                    raise typer.Exit(1)
                 issue = issues[0]
             else:
                 issue = beads.get_issue_by_id(issue_id)  # type: ignore[arg-type]

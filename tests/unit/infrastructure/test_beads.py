@@ -36,11 +36,14 @@ class TestGetReadyIssues:
 
     def test_raises_error_when_bd_not_available(self) -> None:
         """Should raise BeadsError when bd not in PATH."""
-        with patch(
-            "agentspaces.infrastructure.beads.is_beads_available", return_value=False
+        with (
+            patch(
+                "agentspaces.infrastructure.beads.is_beads_available",
+                return_value=False,
+            ),
+            pytest.raises(BeadsError, match="bd command not found"),
         ):
-            with pytest.raises(BeadsError, match="bd command not found"):
-                get_ready_issues()
+            get_ready_issues()
 
     def test_returns_unassigned_issues_only(self) -> None:
         """Should filter to unassigned issues only."""
@@ -101,9 +104,9 @@ class TestGetReadyIssues:
                 "agentspaces.infrastructure.beads.is_beads_available", return_value=True
             ),
             patch("subprocess.run", return_value=mock_result),
+            pytest.raises(BeadsError, match="bd ready failed"),
         ):
-            with pytest.raises(BeadsError, match="bd ready failed"):
-                get_ready_issues()
+            get_ready_issues()
 
     def test_raises_error_on_invalid_json(self) -> None:
         """Should raise BeadsError when output is not valid JSON."""
@@ -116,9 +119,9 @@ class TestGetReadyIssues:
                 "agentspaces.infrastructure.beads.is_beads_available", return_value=True
             ),
             patch("subprocess.run", return_value=mock_result),
+            pytest.raises(BeadsError, match="Failed to parse"),
         ):
-            with pytest.raises(BeadsError, match="Failed to parse"):
-                get_ready_issues()
+            get_ready_issues()
 
     def test_raises_error_on_timeout(self) -> None:
         """Should raise BeadsError when command times out."""
@@ -127,9 +130,9 @@ class TestGetReadyIssues:
                 "agentspaces.infrastructure.beads.is_beads_available", return_value=True
             ),
             patch("subprocess.run", side_effect=subprocess.TimeoutExpired("bd", 5)),
+            pytest.raises(BeadsError, match="timed out"),
         ):
-            with pytest.raises(BeadsError, match="timed out"):
-                get_ready_issues()
+            get_ready_issues()
 
 
 class TestGetIssueById:
@@ -137,11 +140,14 @@ class TestGetIssueById:
 
     def test_raises_error_when_bd_not_available(self) -> None:
         """Should raise BeadsError when bd not in PATH."""
-        with patch(
-            "agentspaces.infrastructure.beads.is_beads_available", return_value=False
+        with (
+            patch(
+                "agentspaces.infrastructure.beads.is_beads_available",
+                return_value=False,
+            ),
+            pytest.raises(BeadsError, match="bd command not found"),
         ):
-            with pytest.raises(BeadsError, match="bd command not found"):
-                get_issue_by_id("test-1")
+            get_issue_by_id("test-1")
 
     def test_returns_issue_from_list_response(self) -> None:
         """Should parse issue from list response (single item)."""
@@ -211,9 +217,9 @@ class TestGetIssueById:
                 "agentspaces.infrastructure.beads.is_beads_available", return_value=True
             ),
             patch("subprocess.run", return_value=mock_result),
+            pytest.raises(BeadsError, match="Issue not found: test-1"),
         ):
-            with pytest.raises(BeadsError, match="Issue not found: test-1"):
-                get_issue_by_id("test-1")
+            get_issue_by_id("test-1")
 
     def test_raises_error_on_empty_list(self) -> None:
         """Should raise BeadsError when list is empty."""
@@ -226,9 +232,9 @@ class TestGetIssueById:
                 "agentspaces.infrastructure.beads.is_beads_available", return_value=True
             ),
             patch("subprocess.run", return_value=mock_result),
+            pytest.raises(BeadsError, match="Issue not found"),
         ):
-            with pytest.raises(BeadsError, match="Issue not found"):
-                get_issue_by_id("test-1")
+            get_issue_by_id("test-1")
 
 
 class TestBeadsIssue:

@@ -28,7 +28,8 @@ logger = structlog.get_logger()
 # v1: Initial schema
 # v2: Added deps_synced_at and last_activity_at fields (removed in v3)
 # v3: Removed unused timestamp fields (deps_synced_at, last_activity_at)
-SCHEMA_VERSION = "3"
+# v4: Added issue_id field for beads integration
+SCHEMA_VERSION = "4"
 
 # Maximum metadata file size (1MB - generous for workspace metadata)
 MAX_METADATA_SIZE = 1 * 1024 * 1024
@@ -52,6 +53,7 @@ class WorkspaceMetadata:
         python_version: Python version used for venv.
         has_venv: Whether a virtual environment was created.
         status: Workspace status (active, archived).
+        issue_id: Beads issue ID associated with workspace.
     """
 
     name: str
@@ -63,6 +65,7 @@ class WorkspaceMetadata:
     python_version: str | None = None
     has_venv: bool = False
     status: str = "active"
+    issue_id: str | None = None
 
 
 def save_workspace_metadata(metadata: WorkspaceMetadata, path: Path) -> None:
@@ -240,4 +243,5 @@ def _dict_to_metadata(data: dict[str, Any]) -> WorkspaceMetadata:
         python_version=data.get("python_version"),
         has_venv=data.get("has_venv", False),
         status=data.get("status", "active"),
+        issue_id=data.get("issue_id"),
     )

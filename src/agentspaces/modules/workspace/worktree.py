@@ -107,6 +107,7 @@ def create_worktree(
     project: str,
     base_branch: str = "HEAD",
     *,
+    workspace_name: str | None = None,
     repo_root: Path,
     resolver: PathResolver | None = None,
 ) -> WorktreeCreateResult:
@@ -115,6 +116,7 @@ def create_worktree(
     Args:
         project: Project/repository name.
         base_branch: Base branch to create from.
+        workspace_name: Custom workspace name. If None, generates random name.
         repo_root: Path to the main repository.
         resolver: Path resolver instance.
 
@@ -122,16 +124,24 @@ def create_worktree(
         WorktreeCreateResult with details.
 
     Raises:
+        ValueError: If custom workspace_name already exists.
         git.GitError: If worktree creation fails.
     """
     resolver = resolver or PathResolver()
     resolver.ensure_base()
 
-    # Generate unique workspace name
-    def name_exists(name: str) -> bool:
-        return resolver.workspace_exists(project, name)
+    # Use provided name or generate unique one
+    if workspace_name is not None:
+        # Validate custom name doesn't exist
+        if resolver.workspace_exists(project, workspace_name):
+            raise ValueError(f"Workspace '{workspace_name}' already exists")
+    else:
+        # Generate unique workspace name
+        def name_exists(name: str) -> bool:
+            return resolver.workspace_exists(project, name)
 
-    workspace_name = generate_name(exists_check=name_exists)
+        workspace_name = generate_name(exists_check=name_exists)
+
     workspace_path = resolver.workspace_dir(project, workspace_name)
 
     # Create parent directory

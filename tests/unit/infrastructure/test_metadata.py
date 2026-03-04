@@ -110,7 +110,7 @@ class TestSaveWorkspaceMetadata:
 
         data = json.loads(path.read_text(encoding="utf-8"))
         assert "version" in data
-        assert data["version"] == "3"  # Schema version 3
+        assert data["version"] == "4"  # Schema version 4
 
     def test_save_creates_parent_directories(self, temp_dir: Path) -> None:
         """Should create parent directories if needed."""

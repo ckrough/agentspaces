@@ -159,6 +159,9 @@ class PreviewPanel(Static):
             f"[bold]Venv:[/bold] {'Yes ✓' if workspace.has_venv else 'No'}",
         ]
 
+        if workspace.issue_id:
+            lines.extend(["", f"[bold]Issue:[/bold] {workspace.issue_id}"])
+
         if workspace.purpose:
             lines.extend(["", "[bold]Purpose:[/bold]", f"{workspace.purpose}"])
 

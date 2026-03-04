@@ -11,6 +11,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 if TYPE_CHECKING:
+    from agentspaces.infrastructure.beads import BeadsIssue
     from agentspaces.modules.workspace.service import WorkspaceInfo
 
 __all__ = [
@@ -20,10 +21,12 @@ __all__ = [
     "print_did_you_mean",
     "print_error",
     "print_info",
+    "print_issue_next_steps",
     "print_next_steps",
     "print_success",
     "print_warning",
     "print_workspace_created",
+    "print_workspace_created_from_issue",
     "print_workspace_removed",
     "print_workspace_status",
     "print_workspace_table",
@@ -117,6 +120,86 @@ def print_next_steps(workspace_path: str, has_venv: bool) -> None:
     lines = [f"  {i + 1}. [cyan]{step}[/cyan]" for i, step in enumerate(steps)]
     panel = Panel(
         "\n".join(lines),
+        title="[blue]Next Steps[/blue]",
+        border_style="blue",
+    )
+    console.print(panel)
+
+
+def print_workspace_created_from_issue(
+    issue: BeadsIssue,
+    workspace: WorkspaceInfo,
+) -> None:
+    """Print workspace creation summary for issue-based workspace.
+
+    Shows issue context prominently and guides user to claude invocation.
+
+    Args:
+        issue: Beads issue the workspace was created for.
+        workspace: Created workspace information.
+    """
+    # Issue context header
+    console.print()
+    console.print(f"[bold cyan]Issue:[/bold cyan] {issue.id}")
+    console.print(f"[bold]Title:[/bold] {issue.title}")
+    console.print(
+        f"[bold]Type:[/bold] {issue.issue_type}  [bold]Priority:[/bold] {issue.priority}"
+    )
+    console.print()
+
+    # Workspace details panel
+    lines = [
+        f"[bold]Name:[/bold]     {workspace.name}",
+        f"[bold]Location:[/bold] {workspace.path}",
+        f"[bold]Branch:[/bold]   {workspace.branch} (from {workspace.base_branch})",
+    ]
+
+    if workspace.has_venv:
+        version_str = workspace.python_version or "default"
+        lines.append(f"[bold]Python:[/bold]   {version_str} (.venv created)")
+    elif workspace.python_version:
+        lines.append(f"[bold]Python:[/bold]   {workspace.python_version}")
+
+    panel = Panel(
+        "\n".join(lines),
+        title="[green]Workspace Created[/green]",
+        border_style="green",
+    )
+    console.print(panel)
+
+
+def print_issue_next_steps(
+    workspace_path: str,
+    issue_id: str,
+    has_venv: bool,
+) -> None:
+    """Print next steps for issue-based workspace.
+
+    Displays a copyable command string that includes:
+    - cd to workspace
+    - venv activation (if applicable)
+    - claude invocation with 'plan' prompt and issue ID
+
+    Args:
+        workspace_path: Path to the workspace directory.
+        issue_id: Beads issue ID.
+        has_venv: Whether a virtual environment was created.
+    """
+    # Quote values for shell safety
+    quoted_path = shlex.quote(workspace_path)
+    quoted_issue = shlex.quote(issue_id)
+
+    # Build command string
+    commands = [f"cd {quoted_path}"]
+    if has_venv:
+        commands.append("source .venv/bin/activate")
+    commands.append(f"claude 'plan' {quoted_issue}")
+
+    command_str = " && ".join(commands)
+
+    # Display as copyable command
+    panel = Panel(
+        f"[cyan]{command_str}[/cyan]",
         title="[blue]Next Steps[/blue]",
         border_style="blue",
     )

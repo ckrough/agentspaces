@@ -30,8 +30,8 @@ app = typer.Typer(
 def _get_tab_title(workspace: WorkspaceInfo) -> str:
     """Get tab title from beads issue or workspace name.
 
-    If workspace purpose contains a beads issue ID, fetches the issue
-    title from beads. Otherwise falls back to workspace name.
+    Prefers issue_id field if available, otherwise checks purpose field
+    for backward compatibility. Fetches issue title from beads.
 
     Args:
         workspace: Workspace to get title for.
@@ -39,11 +39,21 @@ def _get_tab_title(workspace: WorkspaceInfo) -> str:
     Returns:
         Tab title string (truncated to 30 chars).
     """
-    # Check if purpose looks like a beads issue ID
-    if workspace.purpose and workspace.purpose.startswith("agentspaces-"):
+    # Prefer issue_id field, fall back to parsing purpose for backward compatibility
+    issue_id = workspace.issue_id
+    if (
+        not issue_id
+        and workspace.purpose
+        and workspace.purpose.startswith("agentspaces-")
+    ):
+        # Backward compatibility: parse from purpose
+        issue_id = workspace.purpose.split(":")[0].strip()
+
+    # Fetch issue title from beads if we have an issue_id
+    if issue_id:
         try:
             result = subprocess.run(  # nosec: B603, B607
-                ["bd", "show", workspace.purpose, "--json"],
+                ["bd", "show", issue_id, "--json"],
                 capture_output=True,
                 text=True,
                 timeout=5,
@@ -54,16 +64,16 @@ def _get_tab_title(workspace: WorkspaceInfo) -> str:
                     title: str = str(issues[0]["title"])
                     logger.debug(
                         "tab_title_from_beads",
-                        issue_id=workspace.purpose,
+                        issue_id=issue_id,
                         title=title,
                     )
                     return title[:30]
         except subprocess.TimeoutExpired:
-            logger.warning("beads_timeout", issue_id=workspace.purpose)
+            logger.warning("beads_timeout", issue_id=issue_id)
         except json.JSONDecodeError:
-            logger.warning("beads_json_error", issue_id=workspace.purpose)
+            logger.warning("beads_json_error", issue_id=issue_id)
         except (KeyError, IndexError, TypeError):
-            logger.warning("beads_data_error", issue_id=workspace.purpose)
+            logger.warning("beads_data_error", issue_id=issue_id)
 
     # Fallback to workspace name
     return workspace.name[:30]
@@ -95,11 +105,20 @@ def _build_navigation_commands(workspace: WorkspaceInfo, tab_title: str) -> str:
         if venv_activate.exists():
             commands.append(f"source {shlex.quote(str(venv_activate))}")
 
-    # Launch claude with plan prompt (if issue ID exists in purpose)
-    if workspace.purpose and workspace.purpose.startswith("agentspaces-"):
-        # Use shlex.quote to prevent shell injection via workspace.purpose
-        quoted_purpose = shlex.quote(workspace.purpose)
-        commands.append(f"claude 'plan' {quoted_purpose}")
+    # Launch claude with plan prompt (if issue ID exists)
+    # Prefer issue_id field, fall back to parsing purpose for backward compatibility
+    issue_id = workspace.issue_id
+    if (
+        not issue_id
+        and workspace.purpose
+        and workspace.purpose.startswith("agentspaces-")
+    ):
+        # Backward compatibility: parse from purpose
+        issue_id = workspace.purpose.split(":")[0].strip()
+
+    if issue_id:
+        quoted_issue = shlex.quote(issue_id)
+        commands.append(f"claude 'plan' {quoted_issue}")
     else:
         commands.append("claude")
 

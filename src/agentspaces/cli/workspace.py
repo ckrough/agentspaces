@@ -13,14 +13,16 @@ from agentspaces.cli.formatters import (
     print_did_you_mean,
     print_error,
     print_info,
+    print_issue_next_steps,
     print_next_steps,
     print_warning,
     print_workspace_created,
+    print_workspace_created_from_issue,
     print_workspace_removed,
     print_workspace_status,
     print_workspace_table,
 )
-from agentspaces.infrastructure import git
+from agentspaces.infrastructure import beads, git
 from agentspaces.infrastructure.similarity import find_similar_names
 from agentspaces.modules.workspace.service import (
     WorkspaceError,
@@ -50,6 +52,14 @@ def create(
             "--attach", "-a", help="Attach to existing branch instead of creating new"
         ),
     ] = False,
+    next_issue: Annotated[
+        bool,
+        typer.Option("--next-issue", help="Create workspace from next ready issue"),
+    ] = False,
+    issue_id: Annotated[
+        str | None,
+        typer.Option("--issue-id", help="Create workspace from specific issue ID"),
+    ] = None,
     purpose: Annotated[
         str | None,
         typer.Option("--purpose", "-p", help="Purpose/description for this workspace"),
@@ -71,6 +81,9 @@ def create(
     Use --attach to create a workspace for an existing branch without
     creating a new branch. The workspace name will match the branch name.
 
+    Use --next-issue to create a workspace from the next ready beads issue.
+    Use --issue-id to create a workspace from a specific beads issue.
+
     \b
     Examples:
         agentspaces workspace create                      # From current HEAD
@@ -78,7 +91,57 @@ def create(
         agentspaces workspace create -p "Fix auth bug"   # With purpose
         agentspaces workspace create --no-venv            # Skip venv setup
         agentspaces workspace create feature/auth --attach  # Attach to existing branch
+        agentspaces workspace create --next-issue          # From next ready issue
+        agentspaces workspace create --issue-id=proj-123   # From specific issue
     """
+    # Check mutual exclusivity
+    if sum([attach, next_issue, bool(issue_id)]) > 1:
+        print_error("Cannot use --attach, --next-issue, --issue-id together")
+        raise typer.Exit(1)
+
+    # Issue-based workspace creation
+    if next_issue or issue_id:
+        # Check beads availability
+        if not beads.is_beads_available():
+            print_error("bd command not found. Install: pip install beads-project")
+            raise typer.Exit(1)
+
+        try:
+            # Get issue
+            if next_issue:
+                issues = beads.get_ready_issues()
+                if not issues:
+                    print_error("No ready issues found. Create with: bd create")
+                    raise typer.Exit(1)
+                issue = issues[0]
+            else:
+                issue = beads.get_issue_by_id(issue_id)  # type: ignore[arg-type]
+
+            # Create workspace from issue
+            workspace = _service.create_from_issue(
+                issue,
+                base_branch=branch,
+                python_version=python_version,
+                setup_venv=not no_venv,
+            )
+
+            # Display issue-specific output
+            print_workspace_created_from_issue(issue, workspace)
+            print_issue_next_steps(
+                workspace_path=str(workspace.path),
+                issue_id=issue.id,
+                has_venv=workspace.has_venv,
+            )
+            return
+
+        except beads.BeadsError as e:
+            print_error(str(e))
+            raise typer.Exit(1) from e
+        except WorkspaceError as e:
+            print_error(str(e))
+            raise typer.Exit(1) from e
+
+    # Standard workspace creation
     try:
         if attach:
             workspace = _service.create(
